@@ -12,3 +12,4 @@ out/
 next-env.d.ts
 docs/samples/*raw*
 docs/source/
+.claude/
