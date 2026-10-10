@@ -36,7 +36,7 @@ export function StackedBars({ data, series, height = 150, caption }: {
                     if (!v) return null;
                     const h = (v / top) * (height - 20);
                     y -= h;
-                    return <rect key={s.key} x={i * w + w * 0.28} width={w * 0.44} y={y} height={Math.max(h - 0.6, 0.6)} rx="1.2" fill={s.color}><title>{`${d.label}: ${v} ${s.label.toLowerCase()}`}</title></rect>;
+                    return <rect key={s.key} x={i * w + w * 0.36} width={w * 0.28} y={y} height={Math.max(h - 0.6, 0.6)} rx="1.2" fill={s.color}><title>{`${d.label}: ${v} ${s.label.toLowerCase()}`}</title></rect>;
                   })}
                 </g>
               );
@@ -73,7 +73,7 @@ export function Donut({ parts, size = 132, label, sublabel }: {
   return (
     <div className="flex flex-wrap items-center gap-5">
       <svg role="img" aria-label={`${sublabel}: ${parts.map((p) => `${p.label} ${p.value}`).join(", ")}`} viewBox="0 0 42 42" width={size} height={size} className="shrink-0">
-        <circle cx="21" cy="21" r={r} fill="none" stroke="var(--surface-2)" strokeWidth="5" />
+        <circle cx="21" cy="21" r={r} fill="none" stroke="var(--line)" strokeWidth="5" />
         {total > 0 && parts.filter((p) => p.value).map((p) => {
           const pct = (p.value / total) * 100;
           const el = <circle key={p.label} cx="21" cy="21" r={r} fill="none" stroke={p.color} strokeWidth="5" strokeDasharray={`${Math.max(pct - 0.8, 0.4)} ${100 - Math.max(pct - 0.8, 0.4)}`} strokeDashoffset={offset} />;
@@ -101,7 +101,7 @@ export function Gauge({ value, max, label, caption }: { value: number | null; ma
   const arc = 125.66; // half circumference of r=40
   return (
     <svg role="img" aria-label={caption} viewBox="0 0 100 58" className="w-full max-w-56">
-      <path d="M10 50 A40 40 0 0 1 90 50" fill="none" stroke="var(--surface-2)" strokeWidth="9" strokeLinecap="round" />
+      <path d="M10 50 A40 40 0 0 1 90 50" fill="none" stroke="var(--line)" strokeWidth="9" strokeLinecap="round" />
       {value !== null && (
         <path d="M10 50 A40 40 0 0 1 90 50" fill="none" stroke="var(--sage)" strokeWidth="9" strokeLinecap="round" strokeDasharray={`${pct * arc} ${arc}`} />
       )}

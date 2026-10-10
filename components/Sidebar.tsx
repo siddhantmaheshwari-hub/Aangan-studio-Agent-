@@ -22,7 +22,7 @@ export function Brand() {
   return (
     <Link href="/" className="flex items-center gap-2.5 rounded-lg px-1 py-1">
       <svg aria-hidden viewBox="0 0 32 32" className="h-8 w-8">
-        <rect width="32" height="32" rx="9" fill="var(--beige)" />
+        <rect width="32" height="32" rx="9" fill="var(--sage-soft)" />
         <path d="M8 24V14a8 8 0 0 1 16 0v10M12 24v-8a4 4 0 0 1 8 0v8M6 24h20" fill="none" stroke="var(--sage-deep)" strokeWidth="1.6" strokeLinecap="round" />
       </svg>
       <span className="leading-tight">
@@ -46,12 +46,12 @@ export function Nav({ reviewCount }: { reviewCount: number }) {
       {items.map((i) => (
         <Link key={i.href} href={i.href} aria-current={i.active ? "page" : undefined}
           className={`group relative flex min-h-10 shrink-0 items-center gap-3 rounded-xl px-3 text-sm transition-colors duration-150 ${
-            i.active ? "bg-beige font-semibold text-fg" : "text-fg-2 hover:bg-surface-2 hover:text-fg"}`}>
+            i.active ? "bg-sage-soft font-semibold text-sage-deep" : "text-fg-2 hover:bg-surface-2 hover:text-fg"}`}>
           {i.active && <span aria-hidden className="absolute left-0 top-2.5 bottom-2.5 hidden w-[3px] rounded-full bg-sage lg:block" />}
           <Icon name={i.key} />
           <span>{i.label}</span>
           {i.badge ? (
-            <span className="ml-auto rounded-full bg-fg px-2 py-0.5 text-xs font-semibold tabular-nums text-bg" aria-label={`${i.badge} waiting`}>{i.badge}</span>
+            <span className="ml-auto rounded-full bg-accent px-2 py-0.5 text-xs font-semibold tabular-nums text-accent-fg" aria-label={`${i.badge} waiting`}>{i.badge}</span>
           ) : null}
         </Link>
       ))}

@@ -21,12 +21,12 @@ export default async function ReviewPage({ searchParams }: { searchParams: Promi
 
       <nav aria-label="Filter by type" className="mb-5 flex flex-wrap gap-2 text-sm">
         <Link href={`/review?source=${source}`} aria-current={!kind ? "page" : undefined}
-          className={`inline-flex min-h-9 items-center rounded-full border px-3.5 ${!kind ? "border-fg/20 bg-beige font-semibold text-fg" : "border-line bg-surface text-fg-2 hover:text-fg"}`}>
+          className={`inline-flex min-h-9 items-center rounded-full border px-3.5 ${!kind ? "border-sage/40 bg-sage-soft font-semibold text-sage-deep" : "border-line bg-surface text-fg-2 hover:text-fg"}`}>
           All <span className="ml-1.5 tabular-nums text-fg-3">{all.length}</span>
         </Link>
         {ORDER.filter((k) => count(k) > 0).map((k) => (
           <Link key={k} href={`/review?source=${source}&kind=${k}`} aria-current={kind === k ? "page" : undefined}
-            className={`inline-flex min-h-9 items-center rounded-full border px-3.5 ${kind === k ? "border-fg/20 bg-beige font-semibold text-fg" : "border-line bg-surface text-fg-2 hover:text-fg"}`}>
+            className={`inline-flex min-h-9 items-center rounded-full border px-3.5 ${kind === k ? "border-sage/40 bg-sage-soft font-semibold text-sage-deep" : "border-line bg-surface text-fg-2 hover:text-fg"}`}>
             {QUEUE_KIND[k].label} <span className="ml-1.5 tabular-nums text-fg-3">{count(k)}</span>
           </Link>
         ))}
@@ -35,7 +35,7 @@ export default async function ReviewPage({ searchParams }: { searchParams: Promi
       <Card>
         {items.length === 0 ? (
           <div className="flex flex-col items-center gap-2 py-12 text-center">
-            <span aria-hidden className="inline-flex h-12 w-12 items-center justify-center rounded-full bg-beige text-xl text-sage-deep">✓</span>
+            <span aria-hidden className="inline-flex h-12 w-12 items-center justify-center rounded-full bg-sage-soft text-xl text-sage-deep">✓</span>
             <p className="font-display text-xl font-semibold">All clear</p>
             <p className="max-w-sm text-sm text-fg-2">Nothing is waiting for you. New borderline calls and complaints will show up here.</p>
           </div>

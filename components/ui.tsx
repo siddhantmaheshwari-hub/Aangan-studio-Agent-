@@ -103,15 +103,15 @@ export function Kpi({ label, value, delta, icon, note, href }: {
   const body = (
     <>
       <div className="flex items-center gap-2.5 text-sm text-fg-2">
-        {icon && <span aria-hidden className="inline-flex h-8 w-8 items-center justify-center rounded-lg bg-beige text-sage-deep">{icon}</span>}
+        {icon && <span aria-hidden className="inline-flex h-8 w-8 items-center justify-center rounded-lg bg-sage-soft text-sage-deep">{icon}</span>}
         {label}
       </div>
       <div className="font-display mt-3 text-[32px] font-semibold leading-none tabular-nums text-fg">{value}</div>
       <div className="mt-2 min-h-4 text-xs">{change ?? <span className="text-fg-3">{note}</span>}</div>
     </>
   );
-  const cls = "block rounded-2xl border border-line bg-surface p-5 shadow-card";
-  return href ? <Link href={href} className={`${cls} transition-colors duration-150 hover:border-sage`}>{body}</Link> : <div className={cls}>{body}</div>;
+  const cls = "block rounded-2xl border border-line bg-surface p-5";
+  return href ? <Link href={href} className={`${cls} transition-colors duration-150 hover:border-line-strong hover:shadow-card`}>{body}</Link> : <div className={cls}>{body}</div>;
 }
 
 const istDate = (iso: string, opts: Intl.DateTimeFormatOptions) => new Date(iso).toLocaleString("en-IN", { timeZone: "Asia/Kolkata", ...opts });

@@ -61,7 +61,7 @@ export default async function OverviewPage({ searchParams }: { searchParams: Pro
           <p className="mt-1 text-sm text-fg-2">Here&apos;s how the phone enquiries are going.</p>
         </div>
         <div className="flex flex-wrap items-center gap-3">
-          <span className="inline-flex min-h-10 items-center gap-2 rounded-xl border border-line bg-surface px-3.5 text-sm text-fg-2 shadow-card">
+          <span className="inline-flex min-h-10 items-center gap-2 rounded-xl border border-line bg-surface px-3.5 text-sm text-fg-2">
             {I.cal}{ist({ weekday: "short", day: "numeric", month: "short", year: "numeric" })}
           </span>
           <SourceTabs source={source} base="/" />
@@ -76,8 +76,7 @@ export default async function OverviewPage({ searchParams }: { searchParams: Pro
 
       {/* Row 1 — hero + speed to lead */}
       <div className="grid gap-5 xl:grid-cols-3">
-        <section className="relative min-h-[300px] overflow-hidden rounded-3xl border border-line shadow-card xl:col-span-2"
-          style={{ background: "linear-gradient(120deg, #f4eee4 0%, #efe6d8 55%, #e9dfcd 100%)" }}>
+        <section className="relative min-h-[300px] overflow-hidden rounded-3xl border border-line bg-surface shadow-card xl:col-span-2">
           <Courtyard className="pointer-events-none absolute right-5 top-6 hidden w-[42%] max-w-[340px] sm:block" />
           <div className="relative p-6 sm:p-8">
             <div>
@@ -90,7 +89,7 @@ export default async function OverviewPage({ searchParams }: { searchParams: Pro
             )}
             <dl className="mt-7 grid w-[19rem] max-w-full grid-cols-3 gap-2.5">
               {([["Qualified", c.qualified], ["Booked", c.booked], ["Talk time", `${Math.round(c.seconds / 60)}m`]] as const).map(([k, v]) => (
-                <div key={k} className="rounded-2xl border border-white/70 bg-white/60 px-3 py-2.5">
+                <div key={k} className="rounded-2xl border border-line bg-surface-2 px-3 py-2.5">
                   <dt className="text-xs text-fg-3">{k}</dt>
                   <dd className="font-display mt-0.5 text-xl font-semibold tabular-nums text-fg">{v}</dd>
                 </div>
@@ -99,12 +98,12 @@ export default async function OverviewPage({ searchParams }: { searchParams: Pro
             </div>
           </div>
           <Link href={`/calls?${s.slice(1)}`}
-            className="relative mb-6 ml-6 inline-flex min-h-10 items-center gap-2 rounded-xl bg-fg px-4 text-sm font-semibold text-bg transition-colors duration-150 hover:bg-accent sm:absolute sm:bottom-0 sm:right-0 sm:m-0 sm:rounded-none sm:rounded-tl-2xl sm:px-6 sm:py-3.5">
+            className="relative mb-6 ml-6 inline-flex min-h-10 items-center gap-2 rounded-xl bg-accent px-4 text-sm font-semibold text-accent-fg transition-colors duration-150 hover:bg-accent-hover sm:absolute sm:bottom-0 sm:right-0 sm:m-0 sm:rounded-none sm:rounded-tl-2xl sm:px-6 sm:py-3.5">
             See every call <span aria-hidden>→</span>
           </Link>
         </section>
 
-        <section className="rounded-3xl border border-line bg-sand-soft p-6 shadow-card">
+        <section className="rounded-3xl border border-line bg-beige p-6">
           <p className="eyebrow">Speed to lead</p>
           <p className="mt-1 text-xs text-fg-3">Call end → designer&apos;s inbox · target under {target} min</p>
           <div className="mt-3 flex flex-col items-center text-center">
@@ -115,7 +114,7 @@ export default async function OverviewPage({ searchParams }: { searchParams: Pro
               {ai.medianHandoffMin === null ? "Fills in after the first qualified call." : ai.medianHandoffMin <= target ? "Median handoff time — on target." : "Median handoff time — slower than target."}
             </p>
           </div>
-          <p className="mt-5 rounded-2xl bg-surface/80 px-3.5 py-2.5 text-xs leading-relaxed text-fg-2">
+          <p className="mt-5 rounded-2xl border border-line bg-surface px-3.5 py-2.5 text-xs leading-relaxed text-fg-2">
             Callers answered within an hour convert <b className="text-fg">4×</b> better (case data).
           </p>
         </section>
@@ -131,11 +130,11 @@ export default async function OverviewPage({ searchParams }: { searchParams: Pro
 
       {/* Row 3 — decision queue + outcome mix */}
       <div className="grid gap-5 xl:grid-cols-3">
-        <Card className="xl:col-span-2" title={<>Needs your decision {queue.length > 0 && <span className="ml-1 rounded-full bg-fg px-2 py-0.5 text-xs text-bg">{queue.length}</span>}</>}
+        <Card className="xl:col-span-2" title={<>Needs your decision {queue.length > 0 && <span className="ml-1 rounded-full bg-accent px-2 py-0.5 text-xs text-accent-fg">{queue.length}</span>}</>}
           aside={queue.length > 4 ? <Link href={`/review?source=${source}`} className="font-semibold text-accent hover:underline">View all →</Link> : "Escalations stay for 3 days"}>
           {queue.length === 0 ? (
             <div className="flex items-center gap-3 rounded-2xl bg-surface-2 px-4 py-5 text-sm text-fg-2">
-              <span aria-hidden className="inline-flex h-7 w-7 items-center justify-center rounded-full bg-beige text-sage-deep">✓</span>
+              <span aria-hidden className="inline-flex h-7 w-7 items-center justify-center rounded-full bg-sage-soft text-sage-deep">✓</span>
               {o.calls === 0 ? "Nothing yet — calls appear here after Vaani sends them." : "All clear. Every call is handed off or closed by the rules."}
             </div>
           ) : <QueueList items={queue.slice(0, 4)} />}
@@ -192,7 +191,7 @@ export default async function OverviewPage({ searchParams }: { searchParams: Pro
       </div>
 
       {/* Row 5 — AI quality and running cost */}
-      <section className="rounded-3xl border border-line bg-surface p-6 shadow-card">
+      <section className="rounded-3xl border border-line bg-surface p-6">
         <div className="mb-4 flex flex-wrap items-baseline justify-between gap-3">
           <h2 className="text-[15px] font-semibold">AI quality &amp; running cost</h2>
           <Link href="/system" className="text-xs font-semibold text-accent hover:underline">How it works →</Link>

@@ -48,7 +48,7 @@ export default async function SystemPage() {
           <ol className="space-y-4">
             {STEPS.map(([t, d], i) => (
               <li key={t} className="flex gap-3.5">
-                <span aria-hidden className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-beige text-sm font-semibold text-fg-2">{i + 1}</span>
+                <span aria-hidden className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-sage-soft text-sm font-semibold text-sage-deep">{i + 1}</span>
                 <div><p className="font-medium text-fg">{t}</p><p className="text-sm text-fg-2">{d}</p></div>
               </li>
             ))}

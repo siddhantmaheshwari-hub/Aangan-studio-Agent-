@@ -25,7 +25,7 @@ export function QueueList({ items }: { items: QueueItem[] }) {
         return (
           <li key={`${q.kind}-${q.callId}`}>
             <Link href={`/calls/${q.callId}`} className="flex items-start gap-3.5 rounded-xl px-2 py-3.5 transition-colors duration-150 hover:bg-surface-2">
-              <span aria-hidden className="mt-0.5 inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-beige text-sm font-semibold text-fg-2">
+              <span aria-hidden className="mt-0.5 inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-line bg-surface-2 text-sm font-semibold text-fg-2">
                 {initials(q.name, q.phone)}
               </span>
               <span className="min-w-0 flex-1">

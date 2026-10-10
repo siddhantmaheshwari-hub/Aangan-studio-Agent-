@@ -8,10 +8,10 @@ export function SourceTabs({ source, base, params = {} }: { source: string; base
     return `${base}?${p}`;
   };
   return (
-    <nav aria-label="Data source" className="inline-flex rounded-xl border border-line bg-surface p-1 text-sm shadow-card">
+    <nav aria-label="Data source" className="inline-flex rounded-xl border border-line bg-surface p-1 text-sm">
       {tabs.map(([s, label]) => (
         <Link key={s} href={href(s)} aria-current={source === s ? "page" : undefined}
-          className={`inline-flex min-h-8 items-center rounded-lg px-3 transition-colors duration-150 ${source === s ? "bg-beige font-semibold text-fg" : "text-fg-2 hover:text-fg"}`}>
+          className={`inline-flex min-h-8 items-center rounded-lg px-3 transition-colors duration-150 ${source === s ? "bg-sage-soft font-semibold text-sage-deep" : "text-fg-2 hover:text-fg"}`}>
           {label}
         </Link>
       ))}
