@@ -23,9 +23,22 @@ function neonDb(url: string): Db {
 
 function localDb(url: string): Db {
   // Loaded lazily so production bundles never need it.
-  const poolPromise = import("pg").then(({ default: pg }) => new pg.Pool({ connectionString: url, max: 1 }));
+  const poolPromise = import("pg").then(({ default: pg }) => {
+    const pool = new pg.Pool({ connectionString: url, max: 1, idleTimeoutMillis: 5_000 });
+    pool.on("error", () => {}); // an idle connection dropped by the local server; the next query reconnects
+    return pool;
+  });
+  const dropped = (err: unknown) => /ECONNRESET|Connection terminated/i.test(String((err as Error)?.message));
   return {
-    query: async (text, params = []) => (await (await poolPromise).query(text, params)).rows,
+    query: async (text, params = []) => {
+      const pool = await poolPromise;
+      try {
+        return (await pool.query(text, params)).rows;
+      } catch (err) {
+        if (!dropped(err)) throw err;
+        return (await pool.query(text, params)).rows; // one retry on a fresh connection
+      }
+    },
     transaction: async (stmts) => {
       const client = await (await poolPromise).connect();
       try {

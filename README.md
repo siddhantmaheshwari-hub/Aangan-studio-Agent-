@@ -56,8 +56,8 @@ fixtures (`lib/eval.ts`) — run it after every prompt or model change.
 - Region `iad1` (Neon is in us-east-1), daily digest cron only (Hobby allows once a day).
 - Add every key from `.env.example` in Vercel → Settings → Environment Variables (Production).
 - GitHub → Settings → Secrets → Actions: `APP_URL` (production URL) and `CRON_SECRET` (same as Vercel).
-- Vaani post-call webhook → `https://<app>.vercel.app/api/vaani/webhook?secret=<VAANI_WEBHOOK_SECRET>`
-  (or send the secret as an `x-webhook-secret` header if Vaani supports custom headers).
+- Vaani → Settings → Webhooks → add `https://<app>.vercel.app/api/vaani/webhook?secret=<VAANI_WEBHOOK_SECRET>`.
+  Only the `call_postprocessing` event is processed; other lifecycle events are acknowledged and ignored.
 - HubSpot: pipeline "Aangan Enquiries" with stages New enquiry, Consultation booked, Site visit,
   Proposal sent, Won, Lost. Create a deal property `amount_source` (single-line text). If it is
   missing the deal is still created and the source goes into the description.
@@ -69,8 +69,8 @@ fixtures (`lib/eval.ts`) — run it after every prompt or model change.
   retries stop; the call page then shows a **Retry now** button.
 
 ## Known limits / not verified yet
-- Vaani response field names are not publicly documented. `lib/vaani.ts` accepts common variants and
-  stores the raw payload in `calls.raw`; check the first live call and adjust the mapping if needed.
+- Vaani fields follow docs.vaanivoice.ai (call-history `data[]` with `Start_time`, `duration_ms`, `from_number`, `post_processing_status`; webhook event `call_postprocessing`). Raw payloads are kept in `calls.raw`. Timestamps without an offset are treated as UTC — confirm on the first live call.
+- Call history returns "Invalid client_id format" until an agent exists in the Vaani account; create the agent first.
 - "Booked" comes from the transcript (the Cal.com booking happens inside Vaani); the app does not
   call Cal.com.
 - Fixture transcripts are case material, kept in a private repo for testing only.
