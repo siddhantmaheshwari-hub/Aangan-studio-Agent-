@@ -1,9 +1,7 @@
-// Neon (Postgres) Store. Server-side only.
-import { neon } from "@neondatabase/serverless";
+// Postgres Store (Neon in production, local Postgres in dev). Server-side only.
+import { type Db, getDb } from "../db";
 import type { RuleEvaluation } from "../rules";
 import type { CallRow, EnquiryRow, EnquiryWrite, NotificationRow, Store } from "./types";
-
-type Sql = ReturnType<typeof neon>;
 
 const ENQUIRY_COLUMNS = [
   "source", "caller_number", "status", "rule_ids", "flags", "missing_fields", "fields", "summary", "locality_raw",
@@ -20,6 +18,7 @@ function toCall(r: Record<string, unknown>): CallRow {
     enquiry_id: r.enquiry_id === null ? null : Number(r.enquiry_id),
     started_at: iso(r.started_at),
     processed_at: iso(r.processed_at),
+    attempts: Number(r.attempts ?? 0),
   };
 }
 function toEnquiry(r: Record<string, unknown>): EnquiryRow {
@@ -33,10 +32,10 @@ function toEnquiry(r: Record<string, unknown>): EnquiryRow {
 }
 
 export class NeonStore implements Store {
-  constructor(private sql: Sql) {}
+  constructor(private db: Db) {}
 
-  private async q(text: string, params: unknown[] = []) {
-    return (await this.sql.query(text, params)) as Record<string, unknown>[];
+  private q(text: string, params: unknown[] = []) {
+    return this.db.query(text, params);
   }
 
   async saveCall(c: Parameters<Store["saveCall"]>[0]) {
@@ -75,6 +74,23 @@ export class NeonStore implements Store {
     await this.q(`update calls set processed_at = now() where id = $1`, [callId]);
   }
 
+  async claimCall(callId: number) {
+    const r = await this.q(
+      `update calls set processing_started_at = now(), attempts = attempts + 1
+        where id = $1 and processed_at is null
+          and (processing_started_at is null or processing_started_at < now() - interval '3 minutes')
+        returning attempts`,
+      [callId],
+    );
+    return r[0] ? Number(r[0].attempts) : null;
+  }
+  async releaseCall(callId: number) {
+    await this.q(`update calls set processing_started_at = null where id = $1`, [callId]);
+  }
+  async resetAttempts(callId: number) {
+    await this.q(`update calls set attempts = 0, processing_started_at = null where id = $1`, [callId]);
+  }
+
   async getEnquiry(id: number) {
     const r = await this.q(`select * from enquiries where id = $1`, [id]);
     return r[0] ? toEnquiry(r[0]) : null;
@@ -100,14 +116,12 @@ export class NeonStore implements Store {
     return toEnquiry(r[0]);
   }
   async replaceRuleEvaluations(enquiryId: number, evals: RuleEvaluation[]) {
-    await this.sql.transaction([
-      this.sql.query(`delete from rule_evaluations where enquiry_id = $1`, [enquiryId]),
-      ...evals.map((e) =>
-        this.sql.query(
-          `insert into rule_evaluations (enquiry_id, rule_id, fired, result, detail) values ($1,$2,$3,$4,$5)`,
-          [enquiryId, e.ruleId, e.fired, e.result, e.detail],
-        ),
-      ),
+    await this.db.transaction([
+      { text: `delete from rule_evaluations where enquiry_id = $1`, params: [enquiryId] },
+      ...evals.map((e) => ({
+        text: `insert into rule_evaluations (enquiry_id, rule_id, fired, result, detail) values ($1,$2,$3,$4,$5)`,
+        params: [enquiryId, e.ruleId, e.fired, e.result, e.detail],
+      })),
     ]);
   }
 
@@ -149,5 +163,5 @@ export class NeonStore implements Store {
 }
 
 export function neonStore(databaseUrl: string): NeonStore {
-  return new NeonStore(neon(databaseUrl));
+  return new NeonStore(getDb(databaseUrl));
 }

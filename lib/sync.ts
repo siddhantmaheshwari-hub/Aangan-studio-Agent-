@@ -1,6 +1,6 @@
 // Fetches finished calls from Vaani and runs them through the pipeline.
 // Used by the webhook (one call) and by /api/sync polling (a few calls per run).
-import { type PipelineDeps, type ProcessResult, processCall } from "./pipeline";
+import { MAX_ATTEMPTS, type PipelineDeps, type ProcessResult, processCall } from "./pipeline";
 import { callIdOf, isOurAgent, toIncomingCall, type VaaniClient } from "./vaani";
 
 /** A call with no transcript yet, younger than this, is left for the next sync (Vaani may still be writing it). */
@@ -36,7 +36,7 @@ export async function syncFromVaani(deps: PipelineDeps, vaani: VaaniClient, agen
   const todo: string[] = [];
   for (const id of ids) {
     const existing = await deps.store.getCallByVaaniId(id);
-    if (!existing?.processed_at) todo.push(id);
+    if (!existing || (!existing.processed_at && existing.attempts < MAX_ATTEMPTS)) todo.push(id);
   }
 
   const processed: SyncSummary["processed"] = [];

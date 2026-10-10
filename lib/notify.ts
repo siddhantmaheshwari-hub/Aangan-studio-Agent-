@@ -1,4 +1,5 @@
-// Notifications: Resend first, one retry, then Telegram if configured. Every attempt is recorded.
+// Notifications: Resend (one retry) and Telegram. Telegram mode "always" sends both channels;
+// "fallback" sends Telegram only when email failed. Every attempt is recorded.
 // "Sent" means a 2xx from the provider — nothing else.
 import type { NotificationRow, Store } from "./store/types";
 
@@ -12,6 +13,8 @@ export interface Channels {
   email: { configured: boolean; send(to: string, subject: string, text: string): Promise<SendResult> };
   telegram: { configured: boolean; send(text: string): Promise<SendResult> };
   recipients: { handoff: string | null; escalation: string | null; founder: string | null };
+  /** Default "fallback". Production sets it from TELEGRAM_MODE (default "always"). */
+  telegramMode?: "always" | "fallback";
 }
 
 type Kind = NotificationRow["kind"];
@@ -85,21 +88,34 @@ export async function deliver(
     });
 
   const errors: string[] = [];
+  let emailOk = false;
   for (let attempt = 1; attempt <= 2; attempt++) {
     const r = to ? await ch.email.send(to, msg.subject, msg.text) : { ok: false, error: "No recipient email configured" };
     await record("resend", attempt, r, to);
-    if (r.ok) return true;
+    if (r.ok) {
+      emailOk = true;
+      break;
+    }
     errors.push(`resend#${attempt}: ${r.error}`);
     if (!ch.email.configured || !to) break; // retrying can't fix missing config
   }
 
-  if (ch.telegram.configured) {
+  // "always": Telegram goes out alongside email. "fallback": only when email failed.
+  let telegramOk = false;
+  const sendTelegram = ch.telegram.configured && (ch.telegramMode === "always" || !emailOk);
+  if (sendTelegram) {
     const r = await ch.telegram.send(`${msg.subject}\n\n${msg.text}`);
-    await record("telegram", 3, r, "telegram");
-    if (r.ok) return true;
-    errors.push(`telegram: ${r.error}`);
+    await record("telegram", ch.telegramMode === "always" ? 1 : 3, r, "telegram");
+    telegramOk = r.ok;
+    if (!r.ok) errors.push(`telegram: ${r.error}`);
   }
 
+  if (emailOk || telegramOk) {
+    // Delivered somewhere, but a failed channel is still worth seeing on the dashboard.
+    if (errors.length && ch.telegramMode === "always")
+      await store.addPipelineError({ call_id: msg.callId, step: `notify:${msg.kind}`, message: `Partly delivered (${emailOk ? "email" : "Telegram"} only). ${errors.join(" | ")}` });
+    return true;
+  }
   await store.addPipelineError({ call_id: msg.callId, step: `notify:${msg.kind}`, message: `Not delivered. ${errors.join(" | ")}` });
   return false;
 }

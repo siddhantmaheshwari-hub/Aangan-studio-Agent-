@@ -1,14 +1,12 @@
 // Read-only queries for the dashboard. Every number shown comes from stored rows.
-import { neon } from "@neondatabase/serverless";
+import { getDb, type Row } from "./db";
 import { env } from "./env";
 
-function sql() {
+const q = (text: string, params: unknown[] = []): Promise<Row[]> => {
   const url = env().databaseUrl;
   if (!url) throw new Error("DATABASE_URL is not set");
-  return neon(url);
-}
-type Row = Record<string, unknown>;
-const q = async (text: string, params: unknown[] = []) => (await sql().query(text, params)) as Row[];
+  return getDb(url).query(text, params);
+};
 
 export interface Filters {
   status?: string;
@@ -49,22 +47,29 @@ export interface CallListRow {
   rule_ids: string[];
   hubspot_deal_url: string | null;
   hubspot_deal_id: string | null;
-  email: "sent" | "telegram" | "failed" | null;
+  email: "sent" | "failed" | null;
+  telegram: "sent" | "failed" | null;
   processed: boolean;
   enquiry_id: number | null;
+  attempts: number;
+  summary: string | null;
+  area: string | null;
 }
 
 export async function listCalls(f: Filters): Promise<CallListRow[]> {
   const params: unknown[] = [];
   const rows = await q(
-    `select c.id, ${CALL_TIME} as started_at, c.duration_sec, c.caller_number, c.source, c.call_outcome, c.enquiry_id,
+    `select c.id, ${CALL_TIME} as started_at, c.duration_sec, c.caller_number, c.source, c.call_outcome, c.enquiry_id, c.attempts,
+            e.summary, e.locality_normalised as area,
             c.processed_at is not null as processed, ${STATUS_EXPR} as status,
             coalesce(e.flags, '{}') as flags, coalesce(e.rule_ids, '{}') as rule_ids,
             e.hubspot_deal_url, e.hubspot_deal_id, e.fields->'caller_name'->>'value' as caller_name,
             (select case when bool_or(n.ok and n.channel = 'resend') then 'sent'
-                         when bool_or(n.ok and n.channel = 'telegram') then 'telegram'
-                         when count(*) > 0 then 'failed' end
-               from notifications n where n.enquiry_id = e.id and n.kind in ('handoff','escalation')) as email
+                         when count(*) filter (where n.channel = 'resend') > 0 then 'failed' end
+               from notifications n where n.enquiry_id = e.id and n.kind in ('handoff','escalation')) as email,
+            (select case when bool_or(n.ok and n.channel = 'telegram') then 'sent'
+                         when count(*) filter (where n.channel = 'telegram') > 0 then 'failed' end
+               from notifications n where n.enquiry_id = e.id and n.kind in ('handoff','escalation')) as telegram
        from calls c left join enquiries e on e.id = c.enquiry_id
        ${where(f, params)}
        order by ${CALL_TIME} desc limit 500`,
@@ -127,7 +132,7 @@ export async function overview(f: Filters): Promise<Overview> {
             count(distinct eid) filter (where st = 'needs_review')::int as needs_review,
             count(distinct eid) filter (where st = 'escalation')::int as escalations,
             count(distinct eid) filter (where 'booked' = any(flags))::int as booked,
-            coalesce(sum(duration_sec), 0)::int as seconds,
+            coalesce(sum(duration_sec) filter (where source = 'live'), 0)::int as seconds,
             (select percentile_cont(0.5) within group (order by extract(epoch from (b.handoff_at - (b.started_at + make_interval(secs => coalesce(b.duration_sec, 0))))) / 60)
                from base b where b.handoff_at is not null and b.call_outcome = 'completed') as median_handoff_min,
             (select count(distinct n.enquiry_id)::int from notifications n where n.enquiry_id in (select eid from base)
@@ -164,6 +169,72 @@ export async function overview(f: Filters): Promise<Overview> {
     pipelineErrors: Number(r.pipeline_errors),
   };
 }
+
+export interface QueueItem {
+  kind: "escalation" | "needs_review" | "incomplete" | "not_delivered" | "stuck";
+  callId: number;
+  name: string | null;
+  phone: string | null;
+  area: string | null;
+  summary: string | null;
+  ruleIds: string[];
+  flags: string[];
+  at: string | null;
+  detail: string | null;
+}
+
+/** What needs a person, most urgent first. This is the founder's review gate. */
+export async function actionQueue(source = "live"): Promise<QueueItem[]> {
+  const params: unknown[] = [];
+  const src = source === "all" ? "" : (params.push(source), `and e.source = $${params.length}`);
+  const csrc = source === "all" ? "" : `and c.source = $1`;
+  const [enquiries, stuck] = await Promise.all([
+    q(
+      `with x as (
+         select e.*, coalesce(e.override_status, e.status) as st,
+                (select max(c.id) from calls c where c.enquiry_id = e.id and c.call_outcome = 'completed') as call_id,
+                exists (select 1 from notifications n where n.enquiry_id = e.id and n.kind in ('handoff','escalation') and n.ok) as delivered,
+                exists (select 1 from notifications n where n.enquiry_id = e.id and n.kind in ('handoff','escalation')) as attempted
+         from enquiries e where true ${src}
+       )
+       select *, case
+           when attempted and not delivered and st in ('qualified','escalation') then 'not_delivered'
+           when st = 'escalation' then 'escalation'
+           else st end as kind
+       from x
+       where (attempted and not delivered and st in ('qualified','escalation'))
+          or (st = 'escalation' and created_at > now() - interval '3 days')
+          or (override_status is null and status in ('needs_review','incomplete'))
+       order by case when st = 'escalation' then 0 when attempted and not delivered then 1 when st = 'needs_review' then 2 else 3 end,
+                created_at desc
+       limit 50`,
+      params,
+    ),
+    q(
+      `select c.id, c.caller_number, c.attempts, coalesce(c.started_at, c.created_at) as at,
+              (select message from pipeline_errors pe where pe.call_id = c.id order by created_at desc limit 1) as err
+       from calls c where c.processed_at is null and c.attempts > 0 ${csrc}
+       order by c.created_at desc limit 20`,
+      source === "all" ? [] : [source],
+    ),
+  ]);
+  return [
+    ...stuck.map((r) => ({
+      kind: "stuck" as const, callId: Number(r.id), name: null, phone: r.caller_number as string | null, area: null, summary: null,
+      ruleIds: [], flags: [], at: iso(r.at), detail: `Processing failed ${r.attempts}× — ${String(r.err ?? "").slice(0, 160)}`,
+    })),
+    ...enquiries.filter((r) => r.call_id !== null).map((r) => {
+      const f = r.fields as Record<string, { value?: unknown }> | null;
+      return {
+        kind: r.kind as QueueItem["kind"], callId: Number(r.call_id), name: (f?.caller_name?.value as string) ?? null,
+        phone: r.caller_number as string | null, area: r.locality_normalised as string | null, summary: r.summary as string | null,
+        ruleIds: r.rule_ids as string[], flags: r.flags as string[], at: iso(r.created_at), detail: null,
+      };
+    }),
+  ];
+}
+
+const iso = (d: unknown) => (d instanceof Date ? d.toISOString() : (d as string | null));
 
 export async function recentErrors(limit = 5) {
   return q(`select pe.step, pe.message, pe.created_at, pe.call_id from pipeline_errors pe order by created_at desc limit $1`, [limit]);

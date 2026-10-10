@@ -7,22 +7,23 @@ export const dynamic = "force-dynamic";
 export default function DashLayout({ children }: { children: React.ReactNode }) {
   return (
     <div className="mx-auto max-w-7xl px-4 pb-16">
-      <header className="flex flex-wrap items-center justify-between gap-3 border-b border-stone-200 py-4">
-        <nav className="flex items-center gap-5 text-sm">
-          <span className="font-semibold">Aangan · Enquiries</span>
-          <Link href="/" className="text-stone-600 hover:text-stone-900">Overview</Link>
-          <Link href="/calls" className="text-stone-600 hover:text-stone-900">Calls</Link>
+      <a href="#main" className="sr-only focus:not-sr-only focus:absolute focus:top-2 focus:left-2 focus:rounded focus:bg-surface focus:p-2">Skip to content</a>
+      <header className="flex flex-wrap items-center justify-between gap-3 border-b border-line py-3">
+        <nav aria-label="Main" className="flex items-center gap-1 text-sm">
+          <span className="mr-3 font-semibold">Aangan · Enquiries</span>
+          <Link href="/" className="rounded px-2 py-2 text-fg-2 hover:bg-surface-2 hover:text-fg">Overview</Link>
+          <Link href="/calls" className="rounded px-2 py-2 text-fg-2 hover:bg-surface-2 hover:text-fg">All calls</Link>
         </nav>
-        <div className="flex items-center gap-5">
-          <Suspense fallback={<span className="text-xs text-stone-400">Checking health…</span>}>
+        <div className="flex items-center gap-4">
+          <Suspense fallback={<span className="text-xs text-fg-3">Checking system health…</span>}>
             <HealthStrip />
           </Suspense>
           <form method="post" action="/api/logout">
-            <button className="text-xs text-stone-500 hover:text-stone-900">Log out</button>
+            <button className="rounded px-2 py-2 text-xs text-fg-3 hover:bg-surface-2 hover:text-fg">Log out</button>
           </form>
         </div>
       </header>
-      <main className="pt-6">{children}</main>
+      <main id="main" className="pt-6">{children}</main>
     </div>
   );
 }

@@ -12,6 +12,7 @@ export interface CallRow {
   transcript: Turn[];
   enquiry_id: number | null;
   processed_at: string | null;
+  attempts: number;
 }
 
 export interface EnquiryRow {
@@ -63,6 +64,12 @@ export interface Store {
   callsFromCaller(number: string, since: string, until: string): Promise<CallRow[]>;
   linkCall(callId: number, enquiryId: number): Promise<void>;
   markProcessed(callId: number): Promise<void>;
+  /** Take a short lease on an unprocessed call. Returns the attempt number, or null if done or busy. */
+  claimCall(callId: number): Promise<number | null>;
+  /** Drop the lease after a failure so the next sync can retry. */
+  releaseCall(callId: number): Promise<void>;
+  /** Allow a call that hit the retry limit to be tried again (founder action). */
+  resetAttempts(callId: number): Promise<void>;
 
   getEnquiry(id: number): Promise<EnquiryRow | null>;
   createEnquiry(data: EnquiryWrite & { status: Status }): Promise<EnquiryRow>;

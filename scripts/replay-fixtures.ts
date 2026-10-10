@@ -5,6 +5,9 @@
 //   npm run replay -- --db --send     also send real HubSpot deals + Resend emails (test integrations)
 //   npm run replay -- --only T01,T09  subset
 import { getDeps } from "../lib/deps";
+import { gradeExtractions } from "../lib/eval";
+import { goldExtraction } from "../lib/extract/fake";
+import type { Extraction } from "../lib/extract/schema";
 import { checkExpected, EXPECTED, FIXTURES } from "../lib/fixtures";
 import { processCall } from "../lib/pipeline";
 import { MemoryStore } from "../lib/store/memory";
@@ -17,6 +20,17 @@ async function main() {
   const useDb = has("--db");
   const memory = new MemoryStore();
   const deps = getDeps({ store: useDb ? undefined : memory, fake: !has("--gemini"), dryRun: !has("--send") });
+  // Capture what the extractor returned per fixture, so a real model can be graded against the gold labels.
+  const captured = new Map<string, Extraction>();
+  const inner = deps.extractor;
+  deps.extractor = {
+    name: inner.name,
+    async extract(input) {
+      const r = await inner.extract(input);
+      if (input.fixtureId) captured.set(input.fixtureId, r.extraction);
+      return r;
+    },
+  };
   if (has("--send") && !useDb) throw new Error("--send needs --db (outputs are recorded in Neon)");
   console.log(`extractor=${deps.extractor.name} store=${useDb ? "neon" : "memory"} outputs=${deps.channels ? "LIVE (HubSpot + email)" : "dry run"}\n`);
 
@@ -41,6 +55,17 @@ async function main() {
   console.log(w.map((n) => "-".repeat(n)).join("-|-"));
   rows.forEach((r) => console.log(line(r)));
   console.log(`\n${pass}/${fixtures.length} pass`);
+
+  if (!inner.name.startsWith("fake") && captured.size) {
+    const pairs = [...captured].flatMap(([id, got]) => {
+      const gold = goldExtraction(id);
+      return gold ? [{ id, gold, got }] : [];
+    });
+    const g = gradeExtractions(pairs);
+    console.log(`\nExtraction accuracy vs gold labels: ${(g.accuracy * 100).toFixed(1)}% (${pairs.length} calls)`);
+    for (const f of g.perField)
+      console.log(`  ${f.field.padEnd(26)} ${f.correct}/${f.total}${f.misses.length ? `  misses: ${f.misses.join(",")}` : ""}`);
+  }
   if (!useDb) {
     const tokens = memory.costEvents.reduce((s, c) => s + c.input_tokens + c.output_tokens, 0);
     console.log(`cost_events=${memory.costEvents.length} tokens=${tokens} pipeline_errors=${memory.errors.length}`);

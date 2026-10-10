@@ -42,16 +42,25 @@ function costOf(u: TokenUsage, price?: PipelineDeps["geminiPriceInrPer1M"]): num
   return (u.inputTokens * price.input + u.outputTokens * price.output) / 1_000_000;
 }
 
-export async function processCall(deps: PipelineDeps, incoming: IncomingCall, opts: { fixtureId?: string; force?: boolean } = {}): Promise<ProcessResult> {
+/** After this many failed attempts a call stops retrying until the founder presses "Retry". */
+export const MAX_ATTEMPTS = 3;
+
+export async function processCall(deps: PipelineDeps, incoming: IncomingCall, opts: { fixtureId?: string } = {}): Promise<ProcessResult> {
   const { store } = deps;
 
   // 1–2. Save the raw call first, so nothing is lost if a later step fails.
   const { call } = await store.saveCall(incoming);
   const base = { callId: call.id, skipped: false, enquiryId: call.enquiry_id, ruleIds: [] as string[], flags: [] as string[] };
-  if (call.processed_at && !opts.force) {
-    const e = call.enquiry_id ? await store.getEnquiry(call.enquiry_id) : null;
-    return { ...base, skipped: true, status: e ? effectiveStatus(e) : call.call_outcome === "completed" ? null : "missed", ruleIds: e?.rule_ids ?? [], flags: e?.flags ?? [] };
-  }
+  const skip = async () => {
+    const fresh = (await store.getCall(call.id)) ?? call;
+    const e = fresh.enquiry_id ? await store.getEnquiry(fresh.enquiry_id) : null;
+    return { ...base, enquiryId: fresh.enquiry_id, skipped: true, status: e ? effectiveStatus(e) : fresh.call_outcome === "completed" ? null : ("missed" as const), ruleIds: e?.rule_ids ?? [], flags: e?.flags ?? [] };
+  };
+  if (call.processed_at || call.attempts >= MAX_ATTEMPTS) return skip();
+
+  // Lease: if the webhook and the sync arrive together, only one processes the call.
+  const attempt = await store.claimCall(call.id);
+  if (attempt === null) return skip();
 
   const related = call.caller_number && call.started_at
     ? await store.callsFromCaller(
@@ -128,11 +137,18 @@ export async function processCall(deps: PipelineDeps, incoming: IncomingCall, op
     await store.markProcessed(call.id);
     return { ...base, enquiryId: enquiry.id, status: effectiveStatus(enquiry), ruleIds: enquiry.rule_ids, flags: enquiry.flags };
   } catch (err) {
-    // 8. Any unexpected failure: record it, alert the founder; the call stays unprocessed so sync retries it.
+    // 8. Any unexpected failure: record it and release the lease so sync retries it.
+    // Alert on the first failure and when giving up — not on every 15-minute retry.
     const message = (err as Error).message;
-    await store.addPipelineError({ call_id: call.id, step: "pipeline", message });
-    if (deps.channels)
-      await deliver(store, deps.channels, { kind: "system_alert", enquiryId: null, callId: call.id, subject: `[Aangan] Pipeline failed for call ${call.vaani_call_id}`, text: message });
+    const givingUp = attempt >= MAX_ATTEMPTS;
+    await store.addPipelineError({ call_id: call.id, step: "pipeline", message: `attempt ${attempt}/${MAX_ATTEMPTS}: ${message}` });
+    await store.releaseCall(call.id);
+    if (deps.channels && (attempt === 1 || givingUp))
+      await deliver(store, deps.channels, {
+        kind: "system_alert", enquiryId: null, callId: call.id,
+        subject: `[Aangan] ${givingUp ? "Gave up on" : "Pipeline failed for"} call ${call.vaani_call_id}`,
+        text: `${message}\n\n${givingUp ? `Stopped after ${MAX_ATTEMPTS} attempts. Open the call on the dashboard and press Retry once fixed.` : "It will be retried on the next sync."}`,
+      });
     return { ...base, status: null, error: message };
   }
 }

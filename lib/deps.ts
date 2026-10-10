@@ -19,6 +19,7 @@ export function getChannels(e: Env = env()): Channels {
     email: resendChannel(e.resendApiKey, e.resendFrom),
     telegram: telegramChannel(e.telegramToken, e.telegramChatId),
     recipients: { handoff: e.handoffTo ?? null, escalation: e.escalationTo ?? null, founder: e.founderEmail ?? null },
+    telegramMode: e.telegramMode,
   };
 }
 

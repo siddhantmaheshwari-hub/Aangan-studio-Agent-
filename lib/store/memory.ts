@@ -26,6 +26,7 @@ export class MemoryStore implements Store {
       transcript: c.transcript,
       enquiry_id: null,
       processed_at: null,
+      attempts: 0,
     };
     this.calls.push(row);
     return { call: row, created: true };
@@ -50,6 +51,22 @@ export class MemoryStore implements Store {
   async markProcessed(callId: number) {
     const c = this.calls.find((r) => r.id === callId);
     if (c) c.processed_at = new Date().toISOString();
+  }
+  leases = new Map<number, number>();
+  async claimCall(callId: number) {
+    const c = this.calls.find((r) => r.id === callId);
+    const lease = this.leases.get(callId);
+    if (!c || c.processed_at || (lease && Date.now() - lease < 3 * 60_000)) return null;
+    this.leases.set(callId, Date.now());
+    return ++c.attempts;
+  }
+  async releaseCall(callId: number) {
+    this.leases.delete(callId);
+  }
+  async resetAttempts(callId: number) {
+    const c = this.calls.find((r) => r.id === callId);
+    if (c) c.attempts = 0;
+    this.leases.delete(callId);
   }
   async getEnquiry(id: number) {
     return this.enquiries.find((e) => e.id === id) ?? null;

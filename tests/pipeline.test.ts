@@ -145,3 +145,63 @@ describe("outputs", () => {
     expect(store.costEvents).toHaveLength(2);
   });
 });
+
+describe("reliability", () => {
+  const t01 = () => FIXTURES.find((f) => f.fixtureId === "T01")!;
+
+  it("a call already being processed is not processed twice (webhook + sync race)", async () => {
+    const store = new MemoryStore();
+    const { call } = await store.saveCall(t01().call);
+    await store.claimCall(call.id); // someone else holds the lease
+    const r = await processCall({ store, extractor: fakeExtractor, channels: null, hubspot: null }, t01().call, { fixtureId: "T01" });
+    expect(r.skipped).toBe(true);
+    expect(store.enquiries).toHaveLength(0);
+  });
+
+  it("failures alert on the first attempt and when giving up, not every retry", async () => {
+    const store = new MemoryStore();
+    const { ch } = fakeChannels();
+    const broken = { name: "gemini:down", async extract(): Promise<never> { throw new Error("503 model overloaded"); } };
+    const deps = { store, extractor: broken, channels: ch, hubspot: null };
+    for (let i = 0; i < 5; i++) await processCall(deps, t01().call, { fixtureId: "T01" });
+    const alerts = store.notifications.filter((n) => n.kind === "system_alert" && n.ok);
+    expect(alerts).toHaveLength(2); // attempt 1 and attempt 3 (giving up)
+    expect(store.calls[0].attempts).toBe(3);
+    expect(store.errors.filter((e) => e.step === "pipeline")).toHaveLength(3);
+
+    await store.resetAttempts(store.calls[0].id); // founder presses Retry after the fix
+    const ok = await processCall({ ...deps, extractor: fakeExtractor }, t01().call, { fixtureId: "T01" });
+    expect(ok.status).toBe("qualified");
+  });
+});
+
+describe("telegram mode", () => {
+  const t09 = () => FIXTURES.find((f) => f.fixtureId === "T09")!;
+
+  it("always: escalation goes to both email and Telegram", async () => {
+    const store = new MemoryStore();
+    const { ch, sent } = fakeChannels({ telegram: "ok" });
+    ch.telegramMode = "always";
+    await processCall({ store, extractor: fakeExtractor, channels: ch, hubspot: null }, t09().call, { fixtureId: "T09" });
+    const n = store.notifications.filter((x) => x.kind === "escalation");
+    expect(n.map((x) => [x.channel, x.ok])).toEqual([["resend", true], ["telegram", true]]);
+    expect(sent.map((s) => s.channel)).toEqual(["resend", "telegram"]);
+  });
+
+  it("always: Telegram failing while email works is delivered, but the failure is recorded", async () => {
+    const store = new MemoryStore();
+    const { ch } = fakeChannels({ telegram: "fail" });
+    ch.telegramMode = "always";
+    await processCall({ store, extractor: fakeExtractor, channels: ch, hubspot: null }, t09().call, { fixtureId: "T09" });
+    expect(store.notifications.some((x) => x.kind === "escalation" && x.ok)).toBe(true);
+    expect(store.errors.some((e) => e.message.startsWith("Partly delivered"))).toBe(true);
+  });
+
+  it("fallback: Telegram stays quiet when email works", async () => {
+    const store = new MemoryStore();
+    const { ch, sent } = fakeChannels({ telegram: "ok" });
+    ch.telegramMode = "fallback";
+    await processCall({ store, extractor: fakeExtractor, channels: ch, hubspot: null }, t09().call, { fixtureId: "T09" });
+    expect(sent.map((s) => s.channel)).toEqual(["resend"]);
+  });
+});

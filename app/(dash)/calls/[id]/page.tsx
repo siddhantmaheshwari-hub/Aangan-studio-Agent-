@@ -1,216 +1,326 @@
+// Call detail. Decision first (when one is needed), then the evidence behind it.
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { DecisionForm } from "@/components/DecisionForm";
+import { buttonPrimary, Card, dur, Flag, IST, iso, StatusBadge } from "@/components/ui";
+import { formatValue, ruleTitle, STATUS_HELP, STATUS_LABEL } from "@/lib/labels";
+import { MAX_ATTEMPTS } from "@/lib/pipeline";
+import { scanAgentTurns } from "@/lib/priceScanner";
 import { getCallDetail } from "@/lib/queries";
-import { RULES } from "@/lib/rules";
 import { STATUSES, type Turn } from "@/lib/types";
-import { dur, Flag, IST, Missing, StatusBadge } from "@/components/ui";
 
 type Field = { value: unknown; quote: string | null } | undefined;
-const iso = (d: unknown) => (d instanceof Date ? d.toISOString() : (d as string | null));
 
-const FIELD_LABELS: [string, string][] = [
-  ["caller_name", "Name"], ["referred_by", "Referred by"], ["heard_via", "Heard via"], ["locality", "Locality (as said)"],
-  ["other_city", "Other city"], ["property_type", "Property type"], ["property_detail", "Property"], ["size_sqft", "Size (sq ft)"],
-  ["bhk", "BHK"], ["scope", "Scope"], ["rooms", "Rooms"], ["site_status", "Site"], ["timeline", "Timeline"],
-  ["completion_within_weeks", "Finish within (weeks)"], ["later_start_offered", "Later start offered"],
-  ["later_start_accepted", "Later start accepted"], ["decision_maker", "Decision maker"], ["tenant", "Tenant"],
-  ["budget_volunteered", "Budget volunteered"], ["budget_min_inr", "Budget min (₹)"], ["budget_max_inr", "Budget max (₹)"],
-  ["price_asked", "Asked for price"], ["existing_client_complaint", "Existing-client complaint"],
-  ["asks_for_senior", "Asked for Nikhil/senior"], ["prior_contact_frustrated", "Prior contact, no follow-up"], ["booked", "Booked in call"],
+// Facts the team needs before calling back, in the order they ask for them.
+const KEY_FACTS: [string, string][] = [
+  ["caller_name", "Name"], ["locality", "Area"], ["property_type", "Property type"], ["property_detail", "Property"],
+  ["size_sqft", "Size (sq ft)"], ["bhk", "BHK"], ["scope", "Scope"], ["rooms", "Rooms"], ["timeline", "Wants it finished"],
+  ["decision_maker", "Who decides"], ["referred_by", "Referred by"],
 ];
+// Shown only when the caller actually said something about them.
+const OTHER_FACTS: [string, string][] = [
+  ["heard_via", "Heard about us via"], ["other_city", "City"], ["site_status", "Site"], ["completion_within_weeks", "Finish within (weeks)"],
+  ["later_start_offered", "Later start offered"], ["later_start_accepted", "Later start accepted"], ["tenant", "Tenant"],
+  ["budget_min_inr", "Budget from"], ["budget_max_inr", "Budget up to"], ["price_asked", "Asked for a price"],
+  ["existing_client_complaint", "Existing-client complaint"], ["asks_for_senior", "Asked for Nikhil / senior"],
+  ["prior_contact_frustrated", "Earlier enquiry not followed up"], ["booked", "Booked in call"],
+];
+const LABEL_OF = Object.fromEntries([...KEY_FACTS, ...OTHER_FACTS]);
 
-const show = (v: unknown) => (v === null || v === undefined || v === "" ? <Missing /> : typeof v === "boolean" ? (v ? "yes" : "no") : String(v));
+const norm = (s: string) => s.toLowerCase().replace(/[^\p{L}\p{N}]+/gu, " ").trim();
 
-export default async function CallDetailPage({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<{ error?: string; saved?: string }> }) {
+type SP = { error?: string; saved?: string; notice?: string };
+
+export default async function CallDetailPage({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<SP> }) {
   const { id } = await params;
-  const { error, saved } = await searchParams;
+  const sp = await searchParams;
   if (!/^\d+$/.test(id)) notFound();
   const d = await getCallDetail(Number(id));
   if (!d) notFound();
-  const { call, enquiry, rules, notifications, siblings, errors } = d;
+  const { call, enquiry, rules, notifications, siblings, errors, audit } = d;
+
   const fields = (enquiry?.fields ?? {}) as Record<string, Field>;
   const transcript = (call.transcript ?? []) as Turn[];
   const completed = call.call_outcome === "completed";
-  const status = !completed ? "missed" : enquiry ? ((enquiry.override_status ?? enquiry.status) as string) : null;
+  const live = call.source === "live";
+  const status = !completed ? "missed" : enquiry ? String(enquiry.override_status ?? enquiry.status) : null;
   const flags = (enquiry?.flags ?? []) as string[];
-  const missing = (enquiry?.missing_fields ?? []) as string[];
-  const card = "rounded-lg border border-stone-200 bg-white p-4";
+  const fired = rules.filter((r) => r.fired);
+  const passed = rules.filter((r) => !r.fired);
+  const sentOk = (kind: string) => notifications.some((n) => n.kind === kind && n.ok);
+  const deliveryFailed = (status === "qualified" || status === "escalation") && notifications.some((n) => n.kind === (status === "qualified" ? "handoff" : "escalation")) && !sentOk(status === "qualified" ? "handoff" : "escalation");
+  const needsDecision = Boolean(enquiry) && ((!enquiry!.override_status && ["needs_review", "incomplete"].includes(String(enquiry!.status))) || status === "escalation" || deliveryFailed);
+  const stuck = completed && !enquiry;
+  const name = (fields.caller_name?.value as string) ?? call.caller_number ?? "Unknown caller";
+
+  // Evidence: which transcript lines support which facts, and where the agent spoke a price.
+  const priceTurns = new Set(scanAgentTurns(transcript).map((h) => h.turnIndex));
+  const usedFor = new Map<number, string[]>();
+  for (const [k, f] of Object.entries(fields)) {
+    if (!f?.quote || !LABEL_OF[k]) continue;
+    const q = norm(f.quote);
+    const idx = transcript.findIndex(([sp, t]) => sp === "USER" && q.length > 3 && norm(t).includes(q));
+    if (idx >= 0) usedFor.set(idx, [...(usedFor.get(idx) ?? []), LABEL_OF[k]]);
+  }
+
+  const decision = enquiry && (
+    <DecisionForm
+      callId={Number(call.id)} current={status ?? ""} rulesStatus={String(enquiry.status)} overridden={Boolean(enquiry.override_status)}
+      live={live} hasDeal={Boolean(enquiry.hubspot_deal_id)} handoffSent={sentOk("handoff")} escalationSent={sentOk("escalation")}
+      statuses={STATUSES.filter((s) => s !== "missed").map((s) => ({ value: s, label: STATUS_LABEL[s], help: STATUS_HELP[s] }))}
+    />
+  );
+
+  const fact = (k: string, label: string, always: boolean) => {
+    const f = fields[k];
+    const value = k === "locality" && enquiry?.locality_normalised
+      ? `${enquiry.locality_normalised}${f?.value && f.value !== enquiry.locality_normalised ? ` (said “${f.value}”)` : ""}`
+      : formatValue(f?.value, k);
+    if (!value && !always) return null;
+    return (
+      <div key={k} className="grid grid-cols-[9rem_1fr] gap-2 py-1.5">
+        <dt className="text-fg-3">{label}</dt>
+        <dd>
+          {value || <span className="text-fg-3">Not mentioned</span>}
+          {f?.quote && <q className="block text-xs italic text-fg-2">{f.quote}</q>}
+        </dd>
+      </div>
+    );
+  };
 
   return (
     <div className="space-y-5">
-      <Link href="/calls" className="text-sm text-stone-600 underline">← All calls</Link>
+      <Link href="/calls" className="inline-flex min-h-9 items-center text-sm text-fg-2 underline">← All calls</Link>
 
-      <div className="flex flex-wrap items-start justify-between gap-4">
+      {(sp.saved || sp.notice || sp.error) && (
+        <p role="status" className={`rounded-md p-3 text-sm ${sp.error ? "bg-danger-bg text-danger" : "bg-ok-bg text-ok"}`}>
+          {sp.error ?? sp.notice ?? "Decision saved and recorded in the audit log."}
+        </p>
+      )}
+
+      <header className="flex flex-wrap items-start justify-between gap-4">
         <div>
-          <h1 className="text-xl font-semibold">{(fields.caller_name?.value as string) ?? call.caller_number ?? "Unknown caller"}</h1>
-          <p className="text-sm text-stone-600">
-            {IST(iso(call.started_at) ?? iso(call.created_at))} · {dur(call.duration_sec as number | null)} · {String(call.call_outcome)}
-            {call.source === "replay" && " · fixture replay"} · Vaani id <code className="text-xs">{String(call.vaani_call_id)}</code>
+          <h1 className="text-2xl font-semibold">{name}</h1>
+          <p className="text-sm text-fg-2">
+            {IST(iso(call.started_at) ?? iso(call.created_at))} IST · {dur(call.duration_sec as number | null)} · {String(call.call_outcome)}
+            {call.caller_number && name !== call.caller_number ? ` · ${call.caller_number}` : ""}
+            {!live && " · fixture replay"}
           </p>
         </div>
         <div className="text-right">
           <StatusBadge status={status} />
-          {enquiry?.override_status ? <p className="mt-1 text-xs text-stone-600">Overridden (rules said {String(enquiry.status)}): {String(enquiry.override_reason)}</p> : null}
-          <div className="mt-2">{flags.map((f) => <Flag key={f} name={f} />)}</div>
+          {Boolean(enquiry?.override_status) && <p className="mt-1 text-xs text-fg-2">Your decision (rules said {STATUS_LABEL[String(enquiry.status)]})</p>}
+          <div className="mt-2 max-w-md">{flags.map((f) => <Flag key={f} name={f} />)}</div>
         </div>
-      </div>
+      </header>
 
       {siblings.length > 0 && (
-        <div className="rounded-md bg-stone-100 px-3 py-2 text-sm">
-          Same enquiry, other calls:{" "}
+        <p className="rounded-md bg-surface-2 px-3 py-2 text-sm">
+          Same caller, same enquiry:{" "}
           {siblings.map((s) => (
-            <Link key={String(s.id)} href={`/calls/${s.id}`} className="mr-3 underline">{IST(iso(s.started_at))} ({String(s.call_outcome)}, {dur(s.duration_sec as number | null)})</Link>
+            <Link key={String(s.id)} href={`/calls/${s.id}`} className="mr-3 text-accent underline">
+              {IST(iso(s.started_at))} ({String(s.call_outcome)}, {dur(s.duration_sec as number | null)})
+            </Link>
           ))}
-        </div>
+        </p>
       )}
 
-      {completed && !enquiry && (
-        <div className="rounded-md border border-orange-200 bg-orange-50 p-3 text-sm text-orange-900">
-          This call has not been processed yet{errors.length ? " — see errors below" : ""}. The next sync retries it.
-        </div>
+      {stuck && (
+        <Card title="This call hasn't been processed" tone="warn">
+          <p className="text-sm text-fg-2">
+            The call is saved, but the pipeline failed {Number(call.attempts)}× (latest error below).{" "}
+            {Number(call.attempts) >= MAX_ATTEMPTS ? "Automatic retries have stopped." : "It is retried automatically on the next sync."}
+          </p>
+          {errors[0] && <p className="mt-2 rounded bg-surface-2 p-2 font-mono text-xs">{String(errors[0].message)}</p>}
+          <form method="post" action={`/api/calls/${call.id}/retry`} className="mt-3">
+            <button className={buttonPrimary}>Retry now</button>
+          </form>
+        </Card>
+      )}
+
+      {needsDecision && (
+        <Card tone={status === "escalation" || deliveryFailed ? "danger" : "warn"}
+          title={status === "escalation" ? "Escalation — an existing client needs a call back" : deliveryFailed ? "The email didn't get through" : "Your decision is needed"}>
+          <div className="grid gap-5 lg:grid-cols-2">
+            <div className="text-sm">
+              <p className="font-medium">Why it&apos;s here</p>
+              <ul className="mt-1 space-y-2">
+                {fired.map((r) => (
+                  <li key={String(r.rule_id)}>
+                    <span className="font-mono text-xs text-fg-3">{String(r.rule_id)}</span> {ruleTitle(String(r.rule_id))}
+                    <span className="block text-fg-2">{String(r.detail ?? "")}</span>
+                  </li>
+                ))}
+                {deliveryFailed && <li className="text-danger">Every delivery attempt failed — see Notifications below. Contact the team directly.</li>}
+              </ul>
+              {status === "escalation" && (
+                <p className="mt-3 rounded-md bg-surface-2 p-2 text-fg-2">
+                  The agent promised no callback time. Urgent email: <b className="text-fg">{sentOk("escalation") ? "sent" : "not delivered"}</b>. No HubSpot deal is created for complaints.
+                </p>
+              )}
+            </div>
+            {status !== "escalation" ? decision : (
+              <details className="text-sm">
+                <summary className="cursor-pointer font-medium">Change status (only if this isn&apos;t really a complaint)</summary>
+                <div className="mt-3">{decision}</div>
+              </details>
+            )}
+          </div>
+        </Card>
       )}
 
       <div className="grid gap-5 lg:grid-cols-2">
         <div className="space-y-5">
           {enquiry && (
-            <section className={card}>
-              <h2 className="font-medium">Summary</h2>
-              <p className="mt-1 whitespace-pre-line text-sm text-stone-800">{(enquiry.summary as string) || <Missing />}</p>
-              <p className="mt-2 text-xs text-stone-500">
-                Area: {enquiry.locality_normalised ? `${enquiry.locality_normalised} (from “${enquiry.locality_raw}”, match ${enquiry.locality_confidence})` : <Missing />}
-                {" · "}Extracted by {String(enquiry.extractor)}
-              </p>
-              {missing.length > 0 && <p className="mt-1 text-xs text-amber-800">Missing: {missing.join(", ")}</p>}
-            </section>
+            <Card title="Summary" aside={String(enquiry.extractor).startsWith("gemini") ? "Written by AI — check against the transcript" : `Extractor: ${enquiry.extractor}`}>
+              <p className="whitespace-pre-line text-sm">{(enquiry.summary as string) || <span className="text-fg-3">No summary</span>}</p>
+              {(enquiry.missing_fields as string[]).length > 0 && (
+                <p className="mt-2 text-sm text-warn">Not captured in the call: {(enquiry.missing_fields as string[]).join(", ")}</p>
+              )}
+            </Card>
           )}
 
-          <section className={card}>
-            <h2 className="font-medium">Recording</h2>
-            {call.source === "live" ? (
-              <audio controls preload="none" src={`/api/recording/${call.id}`} className="mt-2 w-full">
-                Your browser cannot play this recording.
+          {enquiry && (
+            <Card title="What the caller told us" aside="Quotes are the caller's own words">
+              <dl className="divide-y divide-line text-sm">
+                {KEY_FACTS.map(([k, l]) => fact(k, l, true))}
+                {OTHER_FACTS.map(([k, l]) => fact(k, l, false))}
+              </dl>
+              {Boolean(enquiry.locality_normalised) && Number(enquiry.locality_confidence) < 1 && (
+                <p className="mt-2 text-xs text-fg-2">Area matched by spelling similarity ({Math.round(Number(enquiry.locality_confidence) * 100)}%). Confirm it on the call back.</p>
+              )}
+            </Card>
+          )}
+
+          <Card title="Recording">
+            {live ? (
+              <audio controls preload="none" src={`/api/recording/${call.id}`} className="w-full" aria-label={`Recording of the call with ${name}`}>
+                Your browser can&apos;t play this recording.
               </audio>
             ) : (
-              <p className="mt-1 text-sm text-stone-500">Fixture replay — no recording exists.</p>
+              <p className="text-sm text-fg-3">Fixture replay — there is no recording.</p>
             )}
-          </section>
+          </Card>
+        </div>
 
-          {enquiry && (
-            <section className={card}>
-              <h2 className="font-medium">Why this status <span className="text-xs font-normal text-stone-500">(PROXY rules)</span></h2>
-              <ul className="mt-2 space-y-1 text-sm">
-                {rules.map((r) => (
-                  <li key={String(r.rule_id)} className={r.fired ? "text-stone-900" : "text-stone-400"}>
-                    <span className="font-mono text-xs">{r.fired ? "●" : "○"} {String(r.rule_id)}</span>{" "}
-                    {RULES[String(r.rule_id)] ?? ""}{r.fired ? <b> → {String(r.result)}</b> : null}
-                    <div className="pl-5 text-xs">{String(r.detail ?? "")}</div>
+        <Card title="Transcript" aside={transcript.length ? `${transcript.length} lines` : undefined}>
+          {transcript.length === 0 ? (
+            <p className="text-sm text-fg-3">No transcript (call {String(call.call_outcome)}).</p>
+          ) : (
+            <ol className="space-y-2 text-sm">
+              {transcript.map(([sp, text], i) => {
+                const price = priceTurns.has(i);
+                const used = usedFor.get(i);
+                return (
+                  <li key={i} className={sp === "AGENT" ? "pr-8" : "pl-8"}>
+                    <div className={`rounded-lg px-3 py-2 ${price ? "border-2 border-danger bg-danger-bg" : sp === "AGENT" ? "bg-surface-2" : "border border-line"}`}>
+                      <span className="block text-xs font-semibold text-fg-3">{sp === "AGENT" ? "Agent" : "Caller"}</span>
+                      {text}
+                      {price && <span className="mt-1 block text-xs font-semibold text-danger">⚠ Price figure spoken by the agent</span>}
+                      {used && <span className="mt-1 block text-xs text-fg-3">Used for: {used.join(", ")}</span>}
+                    </div>
                   </li>
-                ))}
-              </ul>
-              {rules.every((r) => !r.fired) && <p className="mt-2 text-sm">No rule fired → qualified.</p>}
-            </section>
+                );
+              })}
+            </ol>
           )}
+        </Card>
+      </div>
 
-          {enquiry && (
-            <section className={card}>
-              <h2 className="font-medium">Extracted fields</h2>
-              <table className="mt-2 w-full text-sm">
-                <tbody className="divide-y divide-stone-100">
-                  {FIELD_LABELS.map(([k, label]) => (
-                    <tr key={k} className="align-top">
-                      <td className="w-44 py-1 pr-2 text-stone-500">{label}</td>
-                      <td className="py-1">
-                        {show(fields[k]?.value)}
-                        {fields[k]?.quote && <div className="text-xs italic text-stone-500">“{fields[k]!.quote}”</div>}
-                      </td>
+      {enquiry && (
+        <Card title="How the status was decided" aside="PROXY rules · decided in code, not by AI">
+          {fired.length === 0 ? (
+            <p className="text-sm">No rule fired, so the enquiry is <b>Qualified</b>.</p>
+          ) : (
+            <ul className="space-y-1 text-sm">
+              {fired.map((r) => (
+                <li key={String(r.rule_id)}>
+                  <span className="font-mono text-xs">{String(r.rule_id)}</span> {ruleTitle(String(r.rule_id))} → <b>{STATUS_LABEL[String(r.result)]}</b>
+                  <span className="block pl-4 text-fg-2">{String(r.detail ?? "")}</span>
+                </li>
+              ))}
+            </ul>
+          )}
+          <details className="mt-3 text-sm">
+            <summary className="cursor-pointer text-fg-2">Show the {passed.length} rules that passed</summary>
+            <ul className="mt-2 space-y-1 text-fg-2">
+              {passed.map((r) => (
+                <li key={String(r.rule_id)}><span className="font-mono text-xs">{String(r.rule_id)}</span> {ruleTitle(String(r.rule_id))} — {String(r.detail ?? "")}</li>
+              ))}
+            </ul>
+          </details>
+          {fired.length > 1 && <p className="mt-2 text-xs text-fg-3">When several rules fire, the strongest wins: escalation › missed › not a fit › needs review › incomplete › qualified.</p>}
+        </Card>
+      )}
+
+      {enquiry && (
+        <div className="grid gap-5 lg:grid-cols-2">
+          <Card title="Notifications & HubSpot">
+            <p className="text-sm">
+              HubSpot:{" "}
+              {enquiry.hubspot_deal_id ? (
+                <>
+                  {enquiry.hubspot_deal_url ? <a className="text-accent underline" href={String(enquiry.hubspot_deal_url)} target="_blank" rel="noreferrer">deal {String(enquiry.hubspot_deal_id)} ↗</a> : `deal ${enquiry.hubspot_deal_id}`}
+                  {" · "}₹{Number(enquiry.amount_inr).toLocaleString("en-IN")} ({enquiry.amount_source === "caller_budget" ? "caller's budget" : "studio average"}, internal forecast only)
+                </>
+              ) : status === "qualified" ? (live ? "no deal yet" : "dry run — no deal for replays") : "not needed for this status"}
+            </p>
+            {notifications.length === 0 ? (
+              <p className="mt-2 text-sm text-fg-3">{status === "qualified" || status === "escalation" ? (live ? "No email attempted yet." : "Dry run — replays send nothing.") : "No email needed for this status."}</p>
+            ) : (
+              <table className="mt-2 w-full text-xs">
+                <caption className="sr-only">Delivery attempts</caption>
+                <thead className="text-left text-fg-3"><tr><th scope="col">When</th><th scope="col">Message</th><th scope="col">Channel</th><th scope="col">Try</th><th scope="col">Result</th></tr></thead>
+                <tbody>
+                  {notifications.map((n, i) => (
+                    <tr key={i} className="align-top">
+                      <td className="py-1 pr-2">{IST(iso(n.created_at))}</td>
+                      <td className="pr-2">{String(n.kind)}</td>
+                      <td className="pr-2">{String(n.channel)}</td>
+                      <td className="pr-2">{String(n.attempt)}</td>
+                      <td className={n.ok ? "text-ok" : "text-danger"}>{n.ok ? "Delivered" : `Failed: ${String(n.error).slice(0, 140)}`}</td>
                     </tr>
                   ))}
                 </tbody>
               </table>
-            </section>
-          )}
-        </div>
-
-        <div className="space-y-5">
-          <section className={card}>
-            <h2 className="font-medium">Transcript</h2>
-            {transcript.length === 0 ? (
-              <p className="mt-1 text-sm text-stone-500">No transcript (call {String(call.call_outcome)}).</p>
-            ) : (
-              <ol className="mt-2 space-y-2 text-sm">
-                {transcript.map(([sp, text], i) => (
-                  <li key={i} className={sp === "AGENT" ? "pr-8" : "pl-8 text-right"}>
-                    <span className={`inline-block rounded-lg px-3 py-1.5 ${sp === "AGENT" ? "bg-stone-100" : "bg-sky-50"}`}>
-                      <span className="block text-[10px] uppercase tracking-wide text-stone-500">{sp === "AGENT" ? "Agent" : "Caller"}</span>
-                      {text}
-                    </span>
-                  </li>
-                ))}
-              </ol>
             )}
-          </section>
+          </Card>
 
-          {enquiry && (
-            <section className={card}>
-              <h2 className="font-medium">Notifications & CRM</h2>
-              <p className="mt-1 text-sm">
-                HubSpot:{" "}
-                {enquiry.hubspot_deal_id ? (
-                  <>
-                    {enquiry.hubspot_deal_url ? <a className="underline" href={String(enquiry.hubspot_deal_url)} target="_blank" rel="noreferrer">deal {String(enquiry.hubspot_deal_id)}</a> : `deal ${enquiry.hubspot_deal_id}`}
-                    {" · "}amount ₹{Number(enquiry.amount_inr).toLocaleString("en-IN")} ({String(enquiry.amount_source)}, internal estimate)
-                  </>
-                ) : "no deal"}
-              </p>
-              {notifications.length === 0 ? (
-                <p className="mt-2 text-sm text-stone-500">No notifications for this enquiry.</p>
-              ) : (
-                <table className="mt-2 w-full text-xs">
-                  <thead className="text-left text-stone-500"><tr><th>Time</th><th>Kind</th><th>Channel</th><th>#</th><th>Result</th></tr></thead>
-                  <tbody>
-                    {notifications.map((n, i) => (
-                      <tr key={i} className="align-top">
-                        <td className="pr-2">{IST(iso(n.created_at))}</td>
-                        <td className="pr-2">{String(n.kind)}</td>
-                        <td className="pr-2">{String(n.channel)}</td>
-                        <td className="pr-2">{String(n.attempt)}</td>
-                        <td className={n.ok ? "text-emerald-800" : "text-red-700"}>{n.ok ? `sent (${n.provider_id ?? "no id"})` : `failed: ${String(n.error).slice(0, 140)}`}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              )}
-            </section>
-          )}
-
-          {enquiry && (
-            <section className={card}>
-              <h2 className="font-medium">Override status</h2>
-              <p className="mt-1 text-xs text-stone-500">The founder makes the final call. Overriding to qualified creates the HubSpot deal and handoff email (live calls only); escalation sends the urgent email.</p>
-              {error && <p className="mt-2 text-sm text-red-700">{error}</p>}
-              {saved && <p className="mt-2 text-sm text-emerald-800">Saved.</p>}
-              <form method="post" action={`/api/calls/${call.id}/override`} className="mt-2 flex flex-wrap items-end gap-2 text-sm">
-                <select name="status" defaultValue="" className="rounded-md border border-stone-300 px-2 py-1.5">
-                  <option value="" disabled>Choose…</option>
-                  {STATUSES.filter((s) => s !== "missed").map((s) => <option key={s} value={s}>{s.replace("_", " ")}</option>)}
-                  {enquiry.override_status ? <option value="clear">clear override (use rules)</option> : null}
-                </select>
-                <input name="reason" placeholder="Reason" className="min-w-48 flex-1 rounded-md border border-stone-300 px-2 py-1.5" />
-                <button className="rounded-md bg-stone-900 px-3 py-1.5 text-white hover:bg-stone-700">Save</button>
-              </form>
-            </section>
-          )}
-
-          {errors.length > 0 && (
-            <section className="rounded-lg border border-red-200 bg-white p-4">
-              <h2 className="font-medium text-red-900">Errors</h2>
-              <ul className="mt-2 space-y-1 text-xs">
-                {errors.map((er, i) => <li key={i}>{IST(iso(er.created_at))} <b>{String(er.step)}</b>: {String(er.message)}</li>)}
+          <Card title="Activity" aside="Audit log">
+            {audit.length === 0 ? <p className="text-sm text-fg-3">No activity recorded.</p> : (
+              <ul className="space-y-1 text-xs text-fg-2">
+                {audit.map((a, i) => {
+                  const detail = a.detail as { reason?: string; status?: string } | null;
+                  return (
+                    <li key={i}>
+                      <span className="text-fg-3">{IST(iso(a.created_at))}</span> <b className="text-fg">{String(a.actor)}</b> {String(a.action).replace(/_/g, " ")}
+                      {detail?.reason ? ` → ${STATUS_LABEL[detail.status ?? ""] ?? detail.status}: “${detail.reason}”` : ""}
+                    </li>
+                  );
+                })}
               </ul>
-            </section>
-          )}
+            )}
+          </Card>
         </div>
-      </div>
+      )}
+
+      {enquiry && !needsDecision && (
+        <Card>
+          <details className="text-sm">
+            <summary className="cursor-pointer font-medium">Change status</summary>
+            <p className="mt-1 text-fg-2">The founder makes the final call. You&apos;ll see what will be sent before saving.</p>
+            <div className="mt-3">{decision}</div>
+          </details>
+        </Card>
+      )}
+
+      {errors.length > 0 && !stuck && (
+        <Card title="Problems with this call" tone="danger">
+          <ul className="space-y-1 text-xs">
+            {errors.map((er, i) => <li key={i}>{IST(iso(er.created_at))} <b>{String(er.step)}</b>: {String(er.message)}</li>)}
+          </ul>
+        </Card>
+      )}
     </div>
   );
 }

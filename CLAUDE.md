@@ -59,9 +59,11 @@ language, and the Cal.com booking action. Our app only acts after the call ends.
   system-failure alerts and a daily digest to the founder. Without a verified domain Resend may only
   send to the account owner's own address — verify. If so, all emails go to the founder's address
   for now and the UI says so.
-- **Telegram (fallback only, optional)**: used only when a Resend send fails after one retry, and
-  only if `TELEGRAM_BOT_TOKEN` is set. Not configured = no fallback; the failure is shown on the
-  dashboard and logged.
+- **Telegram (second channel, optional)** — *changed 10 Oct 2026 at the user's request*: with
+  `TELEGRAM_MODE=always` (default) every handoff, escalation, alert and digest goes to **both**
+  Resend and the team's Telegram chat; delivered = either channel returned 2xx, and each channel's
+  result is recorded and shown separately. `TELEGRAM_MODE=fallback` restores the original rule
+  (Telegram only after Resend fails twice). No bot token or chat id = email only.
 - **Cal.com**: connected inside Vaani (Actions → Integrations → Booking appointment). Booking
   happens during the call, for FIT callers only. Our app reads booking status from the call
   details/transcript; it does not call Cal.com itself unless needed.
@@ -97,7 +99,7 @@ language, and the Cal.com booking action. Our app only acts after the call ends.
 5. Rules engine → status + rule IDs + flags. Price scanner on AGENT turns.
 6. Write `enquiries`, `rule_evaluations`, `cost_events`, `audit_log`.
 7. Qualified → HubSpot contact + deal, handoff email (Resend). Escalation → urgent email (Resend).
-   On Resend failure: retry once, then Telegram if configured. Record every attempt (channel,
+   Resend retries once; Telegram is sent alongside (or as fallback, per TELEGRAM_MODE). Record every attempt (channel,
    result, provider id) in `notifications`.
 8. Any step failing → `pipeline_errors` row + Resend alert to the founder.
 
@@ -135,7 +137,7 @@ disqualifies.
 ## Dashboard (must work end to end)
 - Login (single shared password from env is fine for today).
 - Calls table: time, duration, caller, status badge, flags, rule IDs, booking, HubSpot link,
-  Email sent/failed (and whether the Telegram fallback was used). Filters: status, date range, flag. "Clear filters" resets everything.
+  Email and Telegram sent/failed, shown separately. Filters: status, date range, flag. "Clear filters" resets everything.
 - Call detail: summary, extracted fields with the caller's quotes, transcript, recording player,
   "why this status" (rules fired), notification history, manual status override with reason
   (the founder makes the final call on review items).

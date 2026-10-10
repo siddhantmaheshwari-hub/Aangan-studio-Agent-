@@ -28,6 +28,7 @@ export function env() {
     founderEmail: s("FOUNDER_EMAIL"),
     telegramToken: s("TELEGRAM_BOT_TOKEN"),
     telegramChatId: s("TELEGRAM_CHAT_ID"),
+    telegramMode: (s("TELEGRAM_MODE") === "fallback" ? "fallback" : "always") as "always" | "fallback",
     dashboardPassword: s("DASHBOARD_PASSWORD"),
     cronSecret: s("CRON_SECRET"),
     appUrl: s("APP_URL") ?? (process.env.VERCEL_PROJECT_PRODUCTION_URL ? `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}` : null),

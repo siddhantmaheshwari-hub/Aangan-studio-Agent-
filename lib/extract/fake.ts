@@ -73,6 +73,12 @@ export const FAKE_LABELS: Record<string, Label> = {
 };
 
 
+/** The hand-labelled extraction for a fixture — also the gold standard for grading Gemini. */
+export function goldExtraction(fixtureId: string): Extraction | null {
+  const label = FAKE_LABELS[fixtureId];
+  return label ? build(label) : null;
+}
+
 export const fakeExtractor: Extractor = {
   name: "fake",
   async extract({ fixtureId }) {

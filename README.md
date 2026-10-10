@@ -14,7 +14,7 @@ and recording.
 | **Context** | In-area locality list + aliases, PROXY qualification rules, earlier calls from the same number (one enquiry) | `lib/locality.ts`, `lib/rules.ts`, `lib/pipeline.ts` |
 | **Processing** | Save raw call → extract → normalise locality → price scanner on AGENT turns → rules engine → Neon | `lib/pipeline.ts`, `lib/priceScanner.ts`, `migrations/` |
 | **AI** | Vaani (the call itself, closed bubble). Gemini extracts fields + caller quotes + 2-line summary to a zod-validated schema; it never decides the status | `lib/extract/gemini.ts`, `lib/extract/schema.ts` |
-| **Output** | Dashboard; HubSpot contact + deal (qualified only); Resend handoff / urgent escalation / failure alerts / daily digest; Telegram fallback | `app/(dash)`, `lib/hubspot.ts`, `lib/notify.ts`, `app/api/cron/digest` |
+| **Output** | Dashboard; HubSpot contact + deal (qualified only); Resend handoff / urgent escalation / failure alerts / daily digest; Telegram to the team chat (alongside email) | `app/(dash)`, `lib/hubspot.ts`, `lib/notify.ts`, `app/api/cron/digest` |
 
 ## Statuses (code decides, precedence high → low)
 `escalation` > `missed` > `not_qualified` > `needs_review` > `incomplete` > `qualified`.
@@ -26,6 +26,8 @@ when *location or project type* is missing. T11, T13, T14 and T16 are expected `
 a stated timeline/scope, so missing scope/timeline is shown as "missing" on the dashboard instead
 of blocking qualification.
 
+UX plan, Nine Checks, components map, call flow and the UX scorecard: [docs/UX_PLAN.md](docs/UX_PLAN.md).
+
 ## Run locally
 ```bash
 npm install
@@ -36,7 +38,19 @@ npm run migrate               # create tables in Neon (needs DATABASE_URL)
 npm run replay -- --db        # write fixture replays to Neon (shown as "fixture replay")
 npm run replay -- --db --send --only T01,T09   # test HubSpot + Resend for real
 npm run dev
+
+# Local database instead of Neon (no account needed):
+npm run db:local              # terminal 1: Postgres-compatible server on :54329 (data in .localdb/)
+npm run migrate:local         # terminal 2: create tables
+npm run replay:local          # load the fixture calls
+npm run dev:local             # dashboard on http://localhost:3002
+
+# Telegram (sent alongside email; TELEGRAM_MODE=fallback to use it only when email fails): message @AanganEcho_bot (or add it to the team group), then
+npm run telegram:setup -- --test   # saves TELEGRAM_CHAT_ID to .env.local and sends one test message
 ```
+
+With `--gemini`, the replay also grades Gemini's extraction field by field against the hand-labelled
+fixtures (`lib/eval.ts`) — run it after every prompt or model change.
 
 ## Deploy (Vercel Hobby)
 - Region `iad1` (Neon is in us-east-1), daily digest cron only (Hobby allows once a day).
@@ -47,6 +61,12 @@ npm run dev
 - HubSpot: pipeline "Aangan Enquiries" with stages New enquiry, Consultation booked, Site visit,
   Proposal sent, Won, Lost. Create a deal property `amount_source` (single-line text). If it is
   missing the deal is still created and the source goes into the description.
+
+## Reliability
+- A call is saved before anything else, then claimed with a 3-minute lease, so the webhook and the
+  15-minute sync never process it twice (no duplicate emails or deals).
+- A failing call is retried up to 3 times. The founder is alerted on the first failure and when
+  retries stop; the call page then shows a **Retry now** button.
 
 ## Known limits / not verified yet
 - Vaani response field names are not publicly documented. `lib/vaani.ts` accepts common variants and
