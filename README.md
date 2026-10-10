@@ -6,6 +6,8 @@ leads to HubSpot, emails the team via Resend, and shows every call on a dashboar
 and recording.
 
 ## Components map
+Submission version: [docs/COMPONENTS_MAP.md](docs/COMPONENTS_MAP.md).
+
 
 | Label | What | Where |
 |---|---|---|
