@@ -1,0 +1,9 @@
+.env
+.env.*
+!.env.example
+.localdb
+.next
+node_modules
+docs/source
+.claude
+*.log
