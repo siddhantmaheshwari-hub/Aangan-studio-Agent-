@@ -10,25 +10,27 @@ const num = z.preprocess(
   z.number(),
 );
 const bool = z.preprocess((x) => (x === "true" ? true : x === "false" ? false : x), z.boolean());
+// Lists like ["kitchen", "bedroom"] become "kitchen, bedroom" instead of failing validation.
+const str = z.preprocess((x) => (Array.isArray(x) && x.every((i) => typeof i === "string") ? x.join(", ") : x), z.string());
 
 export const PROPERTY_TYPES = ["home", "office", "hospitality", "fitness", "retail", "other"] as const;
 export const SCOPES = ["design_and_execution", "advice_only", "unclear"] as const;
 export const DECIDERS = ["caller", "caller_with_partner", "someone_else"] as const;
 
 export const ExtractionSchema = z.object({
-  caller_name: field(z.string()),
-  referred_by: field(z.string()),
-  heard_via: field(z.string()),
-  locality: field(z.string()),
-  other_city: field(z.string()),
+  caller_name: field(str),
+  referred_by: field(str),
+  heard_via: field(str),
+  locality: field(str),
+  other_city: field(str),
   property_type: field(z.enum(PROPERTY_TYPES)),
-  property_detail: field(z.string()),
+  property_detail: field(str),
   size_sqft: field(num),
   bhk: field(num),
   scope: field(z.enum(SCOPES)),
-  rooms: field(z.string()),
-  site_status: field(z.string()),
-  timeline: field(z.string()),
+  rooms: field(str),
+  site_status: field(str),
+  timeline: field(str),
   completion_within_weeks: field(num),
   later_start_offered: field(bool),
   later_start_accepted: field(bool),
@@ -79,7 +81,7 @@ export const FIELD_GUIDE: Record<FieldName, string> = {
   rooms: "Which rooms/areas they want done.",
   site_status: "Empty, lived-in, bare shell, under possession, etc.",
   timeline: "When they want the work finished, in their words.",
-  completion_within_weeks: "If they need the work FINISHED by a date, the number of weeks from the call date to that date. null if no finish date, or only a start date.",
+  completion_within_weeks: "If they need the work FINISHED by a date, the number of weeks from the call date to that date. null if no finish date, or only a start date. Use durations stated in the call over your own calendar (if the agent says 'Diwali is three weeks away', use 3).",
   later_start_offered: "true if the agent offered a later start because the timeline was too short.",
   later_start_accepted: "true if the caller clearly accepted the later start; false if they declined or deferred ('let me think'); null if not offered.",
   decision_maker: "caller (caller decides, alone or 'me and my husband') | caller_with_partner (same, explicitly joint) | someone_else (caller is not the decider, e.g. a son calling for parents).",
@@ -87,9 +89,9 @@ export const FIELD_GUIDE: Record<FieldName, string> = {
   budget_volunteered: "true only if the CALLER stated their own budget figure.",
   budget_min_inr: "Lower end of the caller's budget in rupees (1.5 lakh = 150000).",
   budget_max_inr: "Upper end of the caller's budget in rupees.",
-  price_asked: "true if the caller asked what it would cost / for a price, range or ballpark.",
+  price_asked: "true only if the caller asked Aangan for a cost figure, rate, range, ballpark or estimate. Stating their own budget, or asking whether a budget is enough, is false.",
   existing_client_complaint: "true if the caller is an EXISTING client complaining about an ongoing project.",
   asks_for_senior: "true if the caller asks to speak to Nikhil, the founder, or someone senior. Merely mentioning Nikhil (e.g. 'a friend of Nikhil's') is false.",
-  prior_contact_frustrated: "true if the caller says they contacted Aangan before and nobody followed up, and is unhappy about it.",
-  booked: "true only if a consultation slot (a date/time) was actually confirmed during the call. Agreeing to 'set something up' without a confirmed slot is false.",
+  prior_contact_frustrated: "true if a NEW enquirer says they contacted Aangan before and nobody followed up, and is unhappy about it. Existing clients complaining about their project are existing_client_complaint, not this.",
+  booked: "true only if the agent confirmed a specific date AND time for the consultation during the call. 'Let's book it', 'shall I set up a consultation', 'what days work for you' or 'I'll check the calendar' are all false. Agreeing to 'set something up' without a confirmed slot is false.",
 };

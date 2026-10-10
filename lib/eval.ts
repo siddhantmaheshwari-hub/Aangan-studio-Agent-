@@ -3,7 +3,7 @@
 import { normaliseLocality } from "./locality";
 import type { Extraction, FieldName } from "./extract/schema";
 
-const BOOLS: FieldName[] = ["tenant", "budget_volunteered", "price_asked", "existing_client_complaint", "asks_for_senior", "prior_contact_frustrated", "later_start_accepted"];
+const BOOLS: FieldName[] = ["tenant", "budget_volunteered", "price_asked", "existing_client_complaint", "asks_for_senior", "prior_contact_frustrated", "later_start_accepted", "booked"];
 
 export const GRADED: FieldName[] = [
   "locality", "other_city", "property_type", "scope", "size_sqft", "completion_within_weeks", "decision_maker", "referred_by", ...BOOLS,
@@ -15,7 +15,10 @@ const val = (e: Extraction, k: FieldName) => e[k]?.value ?? null;
 export function fieldMatches(k: FieldName, gold: Extraction, got: Extraction): boolean {
   const g = val(gold, k), a = val(got, k);
   if (BOOLS.includes(k)) return (g === true) === (a === true);
-  if (k === "locality") return normaliseLocality(g as string | null).normalised === normaliseLocality(a as string | null).normalised;
+  if (k === "locality") {
+    const area = (e: Extraction) => normaliseLocality((val(e, "locality") ?? val(e, "other_city")) as string | null).normalised;
+    return area(gold) === area(got);
+  }
   if (k === "referred_by" || k === "other_city") return Boolean(g) === Boolean(a);
   if (k === "decision_maker") return (g === "someone_else") === (a === "someone_else");
   if (k === "completion_within_weeks") {

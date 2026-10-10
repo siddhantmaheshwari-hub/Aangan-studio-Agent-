@@ -33,7 +33,8 @@ UX plan, Nine Checks, components map, call flow and the UX scorecard: [docs/UX_P
 npm install
 npm test                      # unit + pipeline tests (no keys needed)
 npm run replay                # fixture table, fake extractor, in memory
-npm run replay -- --gemini    # same with Gemini (needs GEMINI_API_KEY)
+npm run replay -- --gemini    # same with Gemini + field-accuracy grade (needs GEMINI_API_KEY)
+EXTRACT_DEBUG=1 npm run replay -- --gemini   # also print why any model answer was rejected
 npm run migrate               # create tables in Neon (needs DATABASE_URL)
 npm run replay -- --db        # write fixture replays to Neon (shown as "fixture replay")
 npm run replay -- --db --send --only T01,T09   # test HubSpot + Resend for real

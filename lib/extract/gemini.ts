@@ -4,7 +4,7 @@ import { GoogleGenAI } from "@google/genai";
 import { ExtractionSchema, FIELD_GUIDE, FIELD_NAMES } from "./schema";
 import { type Extractor, ExtractionInvalidError, type TokenUsage } from "./types";
 
-export const DEFAULT_GEMINI_MODEL = "gemini-2.5-flash-lite";
+export const DEFAULT_GEMINI_MODEL = "gemini-3.5-flash-lite";
 
 function buildPrompt(transcript: [string, string][], callDate: string | null, previousError?: string) {
   const fields = FIELD_NAMES.map((k) => `- ${k}: ${FIELD_GUIDE[k]}`).join("\n");
@@ -51,6 +51,7 @@ export function geminiExtractor(apiKey: string, model = DEFAULT_GEMINI_MODEL): E
         } catch (err) {
           lastError = `not valid JSON (${(err as Error).message})`;
         }
+        if (process.env.EXTRACT_DEBUG) console.error(`[extract] attempt ${attempt} rejected: ${lastError}`);
       }
       throw new ExtractionInvalidError(`Gemini output failed validation twice: ${lastError}`, usage);
     },

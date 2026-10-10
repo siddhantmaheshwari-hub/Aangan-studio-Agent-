@@ -53,7 +53,7 @@ status (07); auto-callback promise to complainants (09 — nobody can own a prom
 - **Goal →** every completed enquiry call becomes a handoff or a decision item **within 15 minutes of the call ending**, with zero price figures spoken.
 - **Metrics:** median call-end → handoff (target < 15 min) · % calls processed (target 100%) · price figures spoken (guardrail: 0) · delivery failures (guardrail: 0 unseen).
 - **System type:** hybrid. Vaani is the agent inside the call; **after the call it is a workflow** (trigger → input → rule → action → notify → log). Lowest autonomy that works: AI *suggests* facts, code decides, human approves the grey zone.
-- **Model plan:** Gemini Flash-Lite tier (extraction is mechanical; temperature 0; zod schema; one retry). Cost ≈ input tokens × input rate + output tokens × output rate per call, recorded per call in `cost_events`. Step up a tier only if `npm run replay -- --gemini` grades below target.
+- **Model plan:** Gemini 3.5 Flash-Lite (extraction is mechanical; temperature 0; zod schema; one retry). Cost ≈ input tokens × input rate + output tokens × output rate per call, recorded per call in `cost_events`. Step up a tier only if `npm run replay -- --gemini` grades below target.
 
 ## L4 · Experience
 **Principles.** Honest over persuasive · The founder's judgment over automation speed ·
@@ -144,12 +144,18 @@ conveyed by colour alone (labels + ✓/✕).
 | Human control & trust | 10 | 6 | 9 | Gate, preview, confirm, undo, audit |
 | Visual & interface | 10 | 5 | 8 | Tokens, states, dark mode |
 | Accessibility | 10 | 5 | 8 | Contrast measured; keyboard/screen-reader pass still to do by hand |
-| AI / system quality | 10 | 6 | 7 | Fixtures 23/23 + grader built; **Gemini not graded until a key is added** |
+| AI / system quality | 10 | 6 | 9 | Gemini 3.5 Flash-Lite: 23/23 statuses on two runs, 99.1–99.7% field accuracy, 1 model call per call |
 | Security & privacy | 5 | 4 | 5 | |
 | Performance & reliability | 5 | 3 | 5 | Lease, capped retries, idempotent |
-| **Total** | 100 | **59** | **82** | "Ship with fixes logged" |
+| **Total** | 100 | **59** | **84** | "Ship with fixes logged" |
 
-**Still open (honest):** Gemini extraction accuracy (run `npm run replay -- --gemini`), live test
+**AI eval (10 Oct):** first run 22/23 — T07 used the model's own calendar for Diwali instead of the
+"three weeks" said in the call, "booked" was set when a caller only agreed to book, and 14 of 35
+model calls were retries because `rooms` came back as a list. Fixed in the field guide and schema
+(not by changing model): 23/23 on two runs, 99.1–99.7% of graded fields, 21 model calls for 21
+calls, ~2,000 tokens per call.
+
+**Still open (honest):** live test
 calls per TEST_CALLS.md, Vaani payload mapping check on the first real call, a 5-person usability
 round, manual keyboard + screen-reader pass.
 
