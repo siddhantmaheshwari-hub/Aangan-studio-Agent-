@@ -86,3 +86,16 @@ describe("Vaani mapping (documented shapes)", () => {
     expect(isOurAgent(historyRow, undefined)).toBe(true);
   });
 });
+
+describe("real Vaani payload quirks (seen on the first live call)", () => {
+  it("call_duration in seconds, pickup/end timestamps, test-call number in 'to'", () => {
+    const webhook = {
+      event: "call_postprocessing", call_id: "outbound-1", from: "+910000001272", to: "+910000000282", timestamp: "2026-10-10T15:30:30Z",
+      data: { call_type: "outbound", phone_number: "+910000000282", call_duration: 229.91, call_started_at: "2026-10-10T15:26:18Z",
+        picked_up_at: "2026-10-10T15:26:34Z", call_ended_at: "2026-10-10T15:30:26Z", transcript: "[15:26:42] AGENT: Hello\n\n[15:26:50] USER: Hi, 3BHK in Kothrud" },
+    };
+    expect(toIncomingCall("outbound-1", { webhook })).toMatchObject({ durationSec: 232, callerNumber: "+910000000282", startedAt: "2026-10-10T15:26:18.000Z" });
+    const inbound = { ...webhook, data: { ...webhook.data, call_type: "inbound", call_ended_at: undefined, picked_up_at: undefined, call_started_at: undefined } };
+    expect(toIncomingCall("in-1", { webhook: inbound })).toMatchObject({ durationSec: 230, callerNumber: "+910000001272" });
+  });
+});

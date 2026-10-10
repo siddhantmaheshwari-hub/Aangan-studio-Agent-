@@ -61,13 +61,15 @@ export async function processCall(deps: PipelineDeps, incoming: IncomingCall, op
   const attempt = await store.claimCall(call.id);
   if (attempt === null) return skip();
 
-  const related = call.caller_number && call.started_at
+  const others = call.caller_number && call.started_at
     ? await store.callsFromCaller(
         call.caller_number,
         new Date(Date.parse(call.started_at) - SAME_ENQUIRY_DAYS * DAY).toISOString(),
         new Date(Date.parse(call.started_at) + SAME_ENQUIRY_DAYS * DAY).toISOString(),
       )
     : [];
+  // The call itself is always part of its enquiry — even with no caller number (e.g. web test calls).
+  const related = others.some((c) => c.id === call.id) ? others : [...others, call];
   const existingEnquiryId = related.find((c) => c.id !== call.id && c.enquiry_id)?.enquiry_id ?? null;
 
   // A missed or dropped call is not a completed enquiry: call row only (linked if the caller rang back).

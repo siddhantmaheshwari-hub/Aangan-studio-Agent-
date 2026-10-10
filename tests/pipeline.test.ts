@@ -205,3 +205,13 @@ describe("telegram mode", () => {
     expect(sent.map((s) => s.channel)).toEqual(["resend"]);
   });
 });
+
+describe("calls without a caller number (web test calls)", () => {
+  it("still become an enquiry built from their own transcript", async () => {
+    const store = new MemoryStore();
+    const t01 = FIXTURES.find((f) => f.fixtureId === "T01")!;
+    const r = await processCall({ store, extractor: fakeExtractor, channels: null, hubspot: null }, { ...t01.call, callerNumber: null }, { fixtureId: "T01" });
+    expect(r.status).toBe("qualified");
+    expect(store.calls[0].enquiry_id).toBe(r.enquiryId);
+  });
+});

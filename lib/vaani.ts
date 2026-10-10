@@ -175,11 +175,22 @@ export function toIncomingCall(callId: string, src: VaaniSources): IncomingCall 
     if (transcript.length) break;
   }
 
-  const durMs = pick(h, ["duration_ms"]) ?? pick(wh, ["call_duration"]);
-  const durationSec = durMs === undefined ? null : Math.round(Number(durMs) / 1000);
+  // Duration: best from the webhook's own timestamps (pickup → end). Real payloads send call_duration in
+  // SECONDS even on call_postprocessing (docs say ms), so a bare number is treated as ms only above 10,000 (no call lasts 2.7 hours).
+  const whStart = toIso(pick(wh, ["picked_up_at", "call_started_at"]));
+  const whEnd = toIso(pick(wh, ["call_ended_at"]));
+  const rawDur = pick(wh, ["call_duration"]);
+  const durationSec =
+    pick(h, ["duration_ms"]) !== undefined ? Math.round(Number(pick(h, ["duration_ms"])) / 1000)
+    : whStart && whEnd ? Math.round((Date.parse(whEnd) - Date.parse(whStart)) / 1000)
+    : rawDur !== undefined ? Math.round(Number(rawDur) > 10_000 ? Number(rawDur) / 1000 : Number(rawDur))
+    : null;
   const summary = pick(src.details, ["summary"]) ?? pick(h, ["call_summary"]) ?? pick(wh, ["summary"]);
-  const number = pick(h, ["from_number"]) ?? pick(h.call_metadata, ["phone"]);
-  const started = toIso(pick(h, ["Start_time", "start_time"])) ??
+  // Caller: inbound calls come FROM the caller; outbound/test calls go TO them.
+  const inbound = /inbound|incoming/i.test(String(pick(wh, ["call_type"]) ?? pick(h, ["call_type", "direction"]) ?? ""));
+  const number = pick(h, ["from_number"]) ?? pick(h.call_metadata, ["phone"])
+    ?? (inbound ? pick(src.webhook, ["from"]) : pick(wh, ["phone_number"]) ?? pick(src.webhook, ["to"]));
+  const started = toIso(pick(h, ["Start_time", "start_time"])) ?? toIso(pick(wh, ["call_started_at", "picked_up_at"])) ??
     (src.webhook?.timestamp && durationSec !== null ? new Date(Date.parse(String(src.webhook.timestamp)) - durationSec * 1000).toISOString() : toIso(src.webhook?.timestamp));
 
   return {
