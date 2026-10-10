@@ -40,6 +40,7 @@ const BASE = "https://api.hubapi.com";
 export function hubspotClient(token: string | undefined, pipelineId: string | undefined): HubSpotClient {
   let stageCache: Record<string, string> | null = null;
   let portalId: string | null = null;
+  let uiDomain = "app.hubspot.com";
 
   async function call<T>(path: string, init: RequestInit = {}): Promise<T> {
     const res = await fetch(`${BASE}${path}`, {
@@ -63,8 +64,9 @@ export function hubspotClient(token: string | undefined, pipelineId: string | un
   async function portal() {
     if (portalId) return portalId;
     try {
-      const a = await call<{ portalId: number }>(`/account-info/v3/details`);
+      const a = await call<{ portalId: number; uiDomain?: string }>(`/account-info/v3/details`);
       portalId = String(a.portalId);
+      if (a.uiDomain) uiDomain = a.uiDomain; // e.g. app-na2.hubspot.com for EU/NA2 accounts
     } catch {
       portalId = null;
     }
@@ -126,7 +128,7 @@ export function hubspotClient(token: string | undefined, pipelineId: string | un
       const pid = await portal();
       return {
         contactId, dealId: deal.id, amountInr: amount, amountSource: source, warnings,
-        dealUrl: pid ? `https://app.hubspot.com/contacts/${pid}/record/0-3/${deal.id}` : null,
+        dealUrl: pid ? `https://${uiDomain}/contacts/${pid}/record/0-3/${deal.id}` : null,
       };
     },
   };
