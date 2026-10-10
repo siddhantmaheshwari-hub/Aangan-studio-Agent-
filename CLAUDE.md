@@ -38,8 +38,9 @@ language, and the Cal.com booking action. Our app only acts after the call ends.
    call is not a completed enquiry. Missing values are shown as missing.
 6. **No fabricated numbers.** Every dashboard figure comes from stored rows. Estimates are labelled.
 7. **Secrets** only in `.env.local` / Vercel env vars. Never in client components, logs, or Git.
-   The Vaani key never reaches the browser: recordings are streamed through a server route that
-   checks the dashboard login.
+   The Vaani key never reaches the browser: recordings are streamed through a server route.
+   *Changed 10 Oct at the owner's explicit request:* the dashboard has **no password** — anyone with
+   the link can view and use it. Machine routes (Vaani webhook, sync, health, cron) still need their secrets.
 8. **Every feature on screen must work.** If something can't be finished today, remove it from
    the UI rather than leave it broken.
 
@@ -143,7 +144,7 @@ Hadapsar, Magarpatta, NIBM, Kondhwa, Undri, Shivane, Warje, Erandwane, Deccan an
 Renting never disqualifies (unless structural changes are needed).
 
 ## Dashboard (must work end to end)
-- Login (single shared password from env is fine for today).
+- No login (owner's decision, 10 Oct): open to anyone with the link.
 - Calls table: time, duration, caller, status badge, flags, rule IDs, booking, HubSpot link,
   Email and Telegram sent/failed, shown separately. Filters: status, date range, flag. "Clear filters" resets everything.
 - Call detail: summary, extracted fields with the caller's quotes, transcript, recording player,

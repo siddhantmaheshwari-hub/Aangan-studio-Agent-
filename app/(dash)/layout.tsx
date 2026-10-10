@@ -22,9 +22,6 @@ export default async function DashLayout({ children }: { children: React.ReactNo
       <aside className="border-b border-line bg-surface lg:sticky lg:top-0 lg:flex lg:h-screen lg:w-64 lg:shrink-0 lg:flex-col lg:border-b-0 lg:border-r">
         <div className="flex items-center justify-between gap-3 px-4 py-3 lg:px-5 lg:py-6">
           <Brand />
-          <form method="post" action="/api/logout" className="lg:hidden">
-            <button className="min-h-9 rounded-lg px-3 text-sm text-fg-2 hover:bg-surface-2">Log out</button>
-          </form>
         </div>
         <div className="px-3 pb-3 lg:flex-1 lg:px-4">
           <Nav reviewCount={count} />
@@ -33,9 +30,6 @@ export default async function DashLayout({ children }: { children: React.ReactNo
           <Suspense fallback={<p className="text-xs text-fg-3">Checking system health…</p>}>
             <HealthStrip vertical />
           </Suspense>
-          <form method="post" action="/api/logout">
-            <button className="min-h-9 w-full rounded-lg border border-line text-sm text-fg-2 hover:bg-surface-2">Log out</button>
-          </form>
         </div>
       </aside>
 

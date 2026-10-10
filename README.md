@@ -58,7 +58,7 @@ With `--gemini`, the replay also grades Gemini's extraction field by field again
 fixtures (`lib/eval.ts`) — run it after every prompt or model change.
 
 ## Live
-Dashboard: https://aangan-enquiry-agent-lilac.vercel.app (password in `.env.local` → `DASHBOARD_PASSWORD`).
+Dashboard: https://aangan-enquiry-agent-lilac.vercel.app (no password — open to anyone with the link).
 Vaani agent: "Aangan Studio Enquiries". HubSpot pipeline: "Aangan Enquiries".
 
 ## Deploy (Vercel Hobby)
