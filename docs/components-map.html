@@ -1,0 +1,208 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Aangan Components Map</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Fraunces:opsz,wght@9..144,500;9..144,600&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    --bg: #f6f5ef; --surface: #ffffff; --surface-2: #faf9f5; --beige: #f3eee5; --line: #e6e1d6;
+    --fg: #22231f; --fg-2: #4b4b45; --fg-3: #605e56; --sage: #87947c; --sage-soft: #ecefe6;
+    --forest: #465641; --sand: #d9c9ae; --clay: #b9785d;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { width: 1600px; height: 1000px; background: var(--bg); color: var(--fg); font-family: "DM Sans", system-ui, sans-serif; padding: 44px 52px; overflow: hidden; }
+  .serif { font-family: "Fraunces", Georgia, serif; letter-spacing: -0.015em; }
+  .eyebrow { display: inline-flex; align-items: center; gap: 10px; font-size: 12px; font-weight: 600; letter-spacing: .14em; text-transform: uppercase; color: var(--fg-3); }
+  .eyebrow::before { content: ""; width: 18px; height: 1.5px; background: var(--sage); border-radius: 2px; }
+
+  header { display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 26px; }
+  .brand { display: flex; align-items: center; gap: 16px; }
+  .brand svg { width: 52px; height: 52px; }
+  h1 { font-size: 40px; font-weight: 600; line-height: 1.05; }
+  .sub { font-size: 15px; color: var(--fg-2); margin-top: 6px; max-width: 760px; }
+  .live { text-align: right; font-size: 13px; color: var(--fg-2); line-height: 1.6; }
+  .live b { color: var(--forest); }
+
+  .flow { display: grid; grid-template-columns: repeat(6, 1fr); gap: 18px; position: relative; }
+  .card { background: var(--surface); border: 1px solid var(--line); border-radius: 22px; padding: 18px 18px 16px; position: relative; box-shadow: 0 1px 2px rgb(34 35 31 / .04), 0 10px 26px -18px rgb(34 35 31 / .18); display: flex; flex-direction: column; }
+  .card.ai { background: var(--forest); color: #fff; border-color: var(--forest); }
+  .card.ai .what, .card.ai li { color: rgb(255 255 255 / .86); }
+  .card.ai .where { color: rgb(255 255 255 / .78); border-top-color: rgb(255 255 255 / .18); }
+  .card.ai .num { background: rgb(255 255 255 / .16); color: #fff; }
+  .num { display: inline-flex; width: 30px; height: 30px; border-radius: 10px; align-items: center; justify-content: center; background: var(--sage-soft); color: var(--forest); font-weight: 700; font-size: 14px; }
+  .label { font-size: 24px; font-weight: 600; margin-top: 12px; }
+  .what { font-size: 13.5px; color: var(--fg-2); margin-top: 6px; line-height: 1.45; }
+  ul { list-style: none; margin-top: 12px; display: grid; gap: 7px; }
+  li { font-size: 13px; color: var(--fg-2); line-height: 1.35; padding-left: 14px; position: relative; }
+  li::before { content: ""; position: absolute; left: 0; top: 7px; width: 5px; height: 5px; border-radius: 50%; background: var(--sage); }
+  .card.ai li::before { background: var(--sand); }
+  .where { margin-top: auto; padding-top: 12px; border-top: 1px solid var(--line); font-size: 12px; color: var(--fg-3); font-family: ui-monospace, "Cascadia Mono", Consolas, monospace; line-height: 1.5; }
+  .arrow { position: absolute; top: 46px; right: -16px; width: 14px; height: 14px; z-index: 2; color: var(--sage); }
+
+  .rail { margin: 18px 0 22px; display: flex; align-items: center; gap: 14px; font-size: 13px; color: var(--fg-2); }
+  .rail .pill { background: var(--surface); border: 1px solid var(--line); border-radius: 999px; padding: 7px 14px; }
+  .rail .pill b { color: var(--forest); }
+  .rail .sep { color: var(--sage); }
+
+  .bottom { display: grid; grid-template-columns: 1.35fr 1fr 1fr; gap: 18px; }
+  .panel { background: var(--surface); border: 1px solid var(--line); border-radius: 22px; padding: 18px 20px; }
+  .panel.beige { background: var(--beige); }
+  .panel h2 { font-size: 20px; font-weight: 600; margin-bottom: 12px; }
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  td { padding: 6px 0; border-top: 1px solid var(--line); color: var(--fg-2); vertical-align: top; }
+  tr:first-child td { border-top: 0; }
+  td:first-child { width: 128px; }
+  .badge { display: inline-flex; align-items: center; gap: 6px; border-radius: 999px; padding: 2px 10px; font-size: 12px; font-weight: 600; }
+  .badge::before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: currentColor; opacity: .8; }
+  .q { background: var(--sage-soft); color: var(--forest); } .r { background: #f7efdc; color: #77490e; }
+  .n { background: #f0eee8; color: #4b4b45; } .e { background: #f8e9e5; color: #8a2b21; }
+  .i { background: #eaf0f4; color: #2e4d68; } .m { background: #f0eee8; color: #605e56; }
+  .stat { display: flex; align-items: baseline; gap: 10px; padding: 7px 0; border-top: 1px solid var(--line); font-size: 13px; color: var(--fg-2); }
+  .stat:first-of-type { border-top: 0; }
+  .stat .big { font-family: "Fraunces", Georgia, serif; font-size: 26px; font-weight: 600; color: var(--fg); min-width: 74px; }
+  .guard li { font-size: 13px; }
+</style>
+</head>
+<body>
+  <header>
+    <div class="brand">
+      <svg viewBox="0 0 44 44" aria-hidden="true"><rect width="44" height="44" rx="12" fill="#465641"/><path d="M11 33V20a11 11 0 0 1 22 0v13M17 33V22a5 5 0 0 1 10 0v11M8 33h28" fill="none" stroke="#fff" stroke-width="1.8" stroke-linecap="round"/><circle cx="31" cy="12" r="2.4" fill="#d9c9ae"/></svg>
+      <div>
+        <span class="eyebrow">Aangan Studio · Phone enquiry agent</span>
+        <h1 class="serif">Components map</h1>
+      </div>
+    </div>
+    <div class="live">
+      Live dashboard: <b>aangan-enquiry-agent-lilac.vercel.app</b><br/>
+      Next.js on Vercel · Neon Postgres · Vaani · Gemini · HubSpot · Resend · Telegram · Cal.com
+    </div>
+  </header>
+
+  <section class="flow">
+    <div class="card">
+      <span class="num">1</span>
+      <div class="label serif">Trigger</div>
+      <div class="what">The call ends — Vaani rings the app's doorbell.</div>
+      <ul>
+        <li><b>call_postprocessing</b> webhook (secret-checked)</li>
+        <li>Other Vaani events acknowledged, ignored</li>
+        <li>Daily 8:00 IST digest (Vercel cron)</li>
+      </ul>
+      <div class="where">/api/vaani/webhook<br/>/api/cron/digest</div>
+      <svg class="arrow" viewBox="0 0 14 14"><path d="M2 7h9M7 3l4 4-4 4" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    </div>
+
+    <div class="card">
+      <span class="num">2</span>
+      <div class="label serif">Input</div>
+      <div class="what">Everything Vaani knows about the finished call.</div>
+      <ul>
+        <li>Transcript + Vaani's summary</li>
+        <li>Pickup / end times, caller number, call id</li>
+        <li>Recording streamed on demand (not stored)</li>
+      </ul>
+      <div class="where">lib/vaani.ts<br/>Vaani REST: call_details · transcript · stream</div>
+      <svg class="arrow" viewBox="0 0 14 14"><path d="M2 7h9M7 3l4 4-4 4" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    </div>
+
+    <div class="card">
+      <span class="num">3</span>
+      <div class="label serif">Context</div>
+      <div class="what">The studio's own rules — the source of truth.</div>
+      <ul>
+        <li><b>qualified.md</b> — Nikhil's five criteria</li>
+        <li><b>services.md</b> — scope, Pune + PCMC, 6-week minimum</li>
+        <li><b>pricing.md</b> floor — code only, never spoken or shown</li>
+        <li>Earlier calls from the same number (7 days)</li>
+      </ul>
+      <div class="where">lib/rules.ts · lib/locality.ts<br/>lib/budgetCheck.ts</div>
+      <svg class="arrow" viewBox="0 0 14 14"><path d="M2 7h9M7 3l4 4-4 4" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    </div>
+
+    <div class="card">
+      <span class="num">4</span>
+      <div class="label serif">Processing</div>
+      <div class="what">Deterministic code turns the call into a decision.</div>
+      <ul>
+        <li>Save raw call first · lease (no double run)</li>
+        <li>Normalise area (Hinjawadi → Hinjewadi)</li>
+        <li>Scan agent lines for any price</li>
+        <li><b>Rules engine sets the status</b> — every rule logged</li>
+        <li>Retries ×3 with alerts</li>
+      </ul>
+      <div class="where">lib/pipeline.ts · lib/priceScanner.ts<br/>Neon Postgres</div>
+      <svg class="arrow" viewBox="0 0 14 14"><path d="M2 7h9M7 3l4 4-4 4" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    </div>
+
+    <div class="card ai">
+      <span class="num">5</span>
+      <div class="label serif">AI</div>
+      <div class="what">Two models, two narrow jobs — neither decides the status.</div>
+      <ul>
+        <li><b>Vaani</b> (in the call): asks the questions, checks Cal.com, books FIT callers, deflects price</li>
+        <li><b>Gemini 3.5 Flash-Lite</b> (after): facts + caller's own words + 2-line summary, schema-validated</li>
+      </ul>
+      <div class="where">VAANI_SYSTEM_PROMPT.md<br/>lib/extract/gemini.ts</div>
+      <svg class="arrow" viewBox="0 0 14 14"><path d="M2 7h9M7 3l4 4-4 4" fill="none" stroke="#87947c" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    </div>
+
+    <div class="card">
+      <span class="num">6</span>
+      <div class="label serif">Output</div>
+      <div class="what">The right people hear about it, fast.</div>
+      <ul>
+        <li><b>Dashboard</b> — Overview · Review queue · Calls · System</li>
+        <li><b>HubSpot</b> deal — qualified only</li>
+        <li><b>Email + Telegram</b> — handoff, URGENT, alerts</li>
+        <li><b>Cal.com</b> 45-min consultation (in call)</li>
+      </ul>
+      <div class="where">app/(dash) · lib/hubspot.ts<br/>lib/notify.ts</div>
+    </div>
+  </section>
+
+  <div class="rail">
+    <span class="pill">Caller rings</span><span class="sep">→</span>
+    <span class="pill">Vaani qualifies &amp; books</span><span class="sep">→</span>
+    <span class="pill">Webhook</span><span class="sep">→</span>
+    <span class="pill">Save · Gemini reads · <b>code decides</b></span><span class="sep">→</span>
+    <span class="pill">HubSpot + email + Telegram</span><span class="sep">→</span>
+    <span class="pill">Dashboard · founder decides borderline cases</span>
+  </div>
+
+  <section class="bottom">
+    <div class="panel">
+      <h2 class="serif">Statuses</h2>
+      <table>
+        <tr><td><span class="badge q">Qualified</span></td><td>Passes all five criteria → HubSpot deal, handoff email, Telegram</td></tr>
+        <tr><td><span class="badge r">Needs review</span></td><td>Borderline, never auto-declined → Review queue; founder decides</td></tr>
+        <tr><td><span class="badge n">Not a fit</span></td><td>Outside Pune/PCMC · advice/decor only · restaurant/retail/gym · &lt;6 weeks · budget clearly too low</td></tr>
+        <tr><td><span class="badge e">Escalation</span></td><td>Existing-client complaint → URGENT email + Telegram, never a deal</td></tr>
+        <tr><td><span class="badge i">Incomplete</span></td><td>Area or property type missing → Review queue</td></tr>
+        <tr><td><span class="badge m">Missed</span></td><td>Missed or dropped call → dashboard only</td></tr>
+      </table>
+    </div>
+
+    <div class="panel">
+      <h2 class="serif">Guardrails</h2>
+      <ul class="guard">
+        <li><b>No price figures, ever</b> — pricing.md's exact deflection; every agent line scanned</li>
+        <li><b>Code decides</b> the status; AI only reads and summarises</li>
+        <li><b>Never auto-decline</b> a borderline case</li>
+        <li><b>No false success</b> — sent only on a 2xx; each channel logged</li>
+        <li><b>Secrets</b> only in env vars; machine routes need secrets</li>
+      </ul>
+    </div>
+
+    <div class="panel beige">
+      <h2 class="serif">Proof it works</h2>
+      <div class="stat"><span class="big">48</span>automated tests passing</div>
+      <div class="stat"><span class="big">27/27</span>practice calls correct with Gemini (two runs)</div>
+      <div class="stat"><span class="big">99%+</span>of extracted facts correct</div>
+      <div class="stat"><span class="big">Call 1</span>Qualified · booked · no price · deal + email + Telegram · recording plays</div>
+    </div>
+  </section>
+</body>
+</html>
