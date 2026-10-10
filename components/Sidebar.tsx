@@ -20,14 +20,15 @@ function Icon({ name }: { name: string }) {
 
 export function Brand() {
   return (
-    <Link href="/" className="flex items-center gap-2.5 rounded-lg px-1 py-1">
-      <svg aria-hidden viewBox="0 0 32 32" className="h-8 w-8">
-        <rect width="32" height="32" rx="9" fill="var(--sage-soft)" />
-        <path d="M8 24V14a8 8 0 0 1 16 0v10M12 24v-8a4 4 0 0 1 8 0v8M6 24h20" fill="none" stroke="var(--sage-deep)" strokeWidth="1.6" strokeLinecap="round" />
+    <Link href="/" className="flex items-center gap-3.5 rounded-xl px-1 py-1">
+      <svg aria-hidden viewBox="0 0 44 44" className="h-11 w-11 shrink-0 drop-shadow-sm">
+        <rect width="44" height="44" rx="12" fill="var(--forest)" />
+        <path d="M11 33V20a11 11 0 0 1 22 0v13M17 33V22a5 5 0 0 1 10 0v11M8 33h28" fill="none" stroke="#fff" strokeWidth="1.8" strokeLinecap="round" />
+        <circle cx="31" cy="12" r="2.4" fill="#d9c9ae" />
       </svg>
-      <span className="leading-tight">
-        <span className="font-display block text-[17px] font-semibold text-fg">Aangan</span>
-        <span className="block text-xs text-fg-3">Enquiry desk</span>
+      <span className="leading-none">
+        <span className="font-display block text-[28px] font-semibold tracking-tight text-fg">Aangan</span>
+        <span className="mt-1.5 block text-xs font-medium uppercase tracking-[0.16em] text-fg-3">Enquiry desk</span>
       </span>
     </Link>
   );
@@ -46,12 +47,11 @@ export function Nav({ reviewCount }: { reviewCount: number }) {
       {items.map((i) => (
         <Link key={i.href} href={i.href} aria-current={i.active ? "page" : undefined}
           className={`group relative flex min-h-10 shrink-0 items-center gap-3 rounded-xl px-3 text-sm transition-colors duration-150 ${
-            i.active ? "bg-sage-soft font-semibold text-sage-deep" : "text-fg-2 hover:bg-surface-2 hover:text-fg"}`}>
-          {i.active && <span aria-hidden className="absolute left-0 top-2.5 bottom-2.5 hidden w-[3px] rounded-full bg-sage lg:block" />}
+            i.active ? "bg-forest font-semibold text-on-forest shadow-sm" : "text-fg-2 hover:bg-sage-soft hover:text-sage-deep"}`}>
           <Icon name={i.key} />
           <span>{i.label}</span>
           {i.badge ? (
-            <span className="ml-auto rounded-full bg-accent px-2 py-0.5 text-xs font-semibold tabular-nums text-accent-fg" aria-label={`${i.badge} waiting`}>{i.badge}</span>
+            <span className={`ml-auto rounded-full px-2 py-0.5 text-xs font-semibold tabular-nums ${i.active ? "bg-white/20 text-on-forest" : "bg-forest text-on-forest"}`} aria-label={`${i.badge} waiting`}>{i.badge}</span>
           ) : null}
         </Link>
       ))}

@@ -6,7 +6,7 @@
    Every text/background pair is ≥ 4.5:1 (checked). */
 :root {
   color-scheme: light;
-  --bg: #f7f6f1;            /* warm off-white canvas */
+  --bg: #f6f5ef;            /* warm canvas */
   --surface: #ffffff;       /* cards and tables */
   --surface-2: #faf9f5;     /* hover rows, quiet insets */
   --beige: #f3eee5;         /* occasional feature panel */
@@ -17,10 +17,13 @@
   --fg-2: #4b4b45;
   --fg-3: #605e56;
   --sage: #87947c;          /* accent marks, icons, chart highlight */
-  --sage-soft: #eef1ea;     /* active nav / icon chips */
-  --sage-deep: #4c5844;     /* sage text on light */
-  --accent: #5d6a54;        /* primary actions (white text 5.6:1) */
-  --accent-hover: #4c5844;
+  --sage-soft: #ecefe6;     /* icon chips, soft highlights */
+  --forest: #465641;        /* deep green: active nav, selected filters, primary actions */
+  --forest-2: #3a4836;      /* hover / depth */
+  --on-forest: #ffffff;
+  --sage-deep: #465641;     /* green text on light */
+  --accent: #465641;        /* primary actions (white text ~8:1) */
+  --accent-hover: #3a4836;
   --accent-fg: #ffffff;
   --ok: #3d5733;
   --ok-bg: #edf2e8;
@@ -33,7 +36,8 @@
   --neutral: #4b4b45;
   --neutral-bg: #f0eee8;
   /* Charts: sage, sand, clay, slate, stone */
-  --c1: #87947c;
+  --c1: #465641;            /* qualified — forest */
+  --c6: #87947c;            /* sage */
   --c2: #d9c9ae;
   --c3: #c9927a;
   --c4: #9aaab6;
@@ -55,6 +59,9 @@
   --color-sage: var(--sage);
   --color-sage-soft: var(--sage-soft);
   --color-sage-deep: var(--sage-deep);
+  --color-forest: var(--forest);
+  --color-forest-2: var(--forest-2);
+  --color-on-forest: var(--on-forest);
   --color-accent: var(--accent);
   --color-accent-hover: var(--accent-hover);
   --color-accent-fg: var(--accent-fg);
@@ -85,14 +92,25 @@ body {
   letter-spacing: -0.015em;
 }
 
-/* Small uppercase label used above sections. */
+/* Small uppercase label with a short sage rule — editorial detail. */
 .eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
   font-size: 12px;
   font-weight: 600;
-  letter-spacing: 0.12em;
+  letter-spacing: 0.14em;
   text-transform: uppercase;
   color: var(--fg-3);
 }
+.eyebrow::before {
+  content: "";
+  width: 18px;
+  height: 1.5px;
+  border-radius: 2px;
+  background: var(--sage);
+}
+.eyebrow-plain::before { display: none; }
 
 :focus-visible {
   outline: 2px solid var(--accent);

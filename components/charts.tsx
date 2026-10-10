@@ -3,12 +3,16 @@
 
 export interface Series { key: string; label: string; color: string }
 
-export function StackedBars({ data, series, height = 150, caption }: {
+export function StackedBars({ data, series, height = 150, caption, tone = "light" }: {
   data: { label: string; values: Record<string, number> }[];
   series: Series[];
   height?: number;
   caption: string;
+  /** "dark" for use on the forest panel: light labels and gridlines. */
+  tone?: "light" | "dark";
 }) {
+  const dark = tone === "dark";
+  const muted = dark ? "text-white/75" : "text-fg-3";
   const totals = data.map((d) => series.reduce((s, x) => s + (d.values[x.key] ?? 0), 0));
   const max = Math.max(1, ...totals);
   const step = Math.max(1, Math.ceil(max / 4));
@@ -17,7 +21,7 @@ export function StackedBars({ data, series, height = 150, caption }: {
   return (
     <figure className="m-0">
       <div className="flex gap-3" style={{ height }}>
-        <div aria-hidden className="relative w-5 text-right text-xs tabular-nums text-fg-3" style={{ height: height - 20 }}>
+        <div aria-hidden className={`relative w-5 text-right text-xs tabular-nums ${muted}`} style={{ height: height - 20 }}>
           {[top, top / 2, 0].map((t) => (
             <span key={t} className="absolute right-0 -translate-y-1/2 leading-none" style={{ top: `${(1 - t / top) * 100}%` }}>{t}</span>
           ))}
@@ -25,7 +29,7 @@ export function StackedBars({ data, series, height = 150, caption }: {
         <div className="relative flex-1">
           <svg role="img" aria-label={caption} viewBox={`0 0 100 ${height - 20}`} preserveAspectRatio="none" className="h-[calc(100%-20px)] w-full overflow-visible">
             {[0, 0.5, 1].map((f) => (
-              <line key={f} x1="0" x2="100" y1={(height - 20) * f} y2={(height - 20) * f} stroke="var(--line)" strokeWidth="1" vectorEffect="non-scaling-stroke" />
+              <line key={f} x1="0" x2="100" y1={(height - 20) * f} y2={(height - 20) * f} stroke={dark ? "rgb(255 255 255 / 0.16)" : "var(--line)"} strokeWidth="1" vectorEffect="non-scaling-stroke" />
             ))}
             {data.map((d, i) => {
               let y = height - 20;
@@ -42,12 +46,12 @@ export function StackedBars({ data, series, height = 150, caption }: {
               );
             })}
           </svg>
-          <div aria-hidden className="mt-1 flex text-xs text-fg-3">
+          <div aria-hidden className={`mt-1 flex text-xs ${muted}`}>
             {data.map((d) => <span key={d.label} className="text-center" style={{ width: `${w}%` }}>{d.label}</span>)}
           </div>
         </div>
       </div>
-      <figcaption className="mt-3 flex flex-wrap gap-x-4 gap-y-1 text-xs text-fg-2">
+      <figcaption className={`mt-3 flex flex-wrap gap-x-4 gap-y-1 text-xs ${dark ? "text-white/85" : "text-fg-2"}`}>
         {series.map((s) => (
           <span key={s.key} className="inline-flex items-center gap-1.5"><span aria-hidden className="h-2.5 w-2.5 rounded-sm" style={{ background: s.color }} />{s.label}</span>
         ))}
@@ -103,7 +107,7 @@ export function Gauge({ value, max, label, caption }: { value: number | null; ma
     <svg role="img" aria-label={caption} viewBox="0 0 100 58" className="w-full max-w-56">
       <path d="M10 50 A40 40 0 0 1 90 50" fill="none" stroke="var(--line)" strokeWidth="9" strokeLinecap="round" />
       {value !== null && (
-        <path d="M10 50 A40 40 0 0 1 90 50" fill="none" stroke="var(--sage)" strokeWidth="9" strokeLinecap="round" strokeDasharray={`${pct * arc} ${arc}`} />
+        <path d="M10 50 A40 40 0 0 1 90 50" fill="none" stroke="var(--forest)" strokeWidth="9" strokeLinecap="round" strokeDasharray={`${pct * arc} ${arc}`} />
       )}
       <text x="50" y="44" textAnchor="middle" className="font-display" style={{ fontSize: 15, fill: "var(--fg)" }}>{label}</text>
     </svg>

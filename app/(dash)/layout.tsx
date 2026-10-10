@@ -20,7 +20,7 @@ export default async function DashLayout({ children }: { children: React.ReactNo
       <a href="#main" className="sr-only focus:not-sr-only focus:absolute focus:left-3 focus:top-3 focus:z-50 focus:rounded-lg focus:bg-surface focus:p-2">Skip to content</a>
 
       <aside className="border-b border-line bg-surface lg:sticky lg:top-0 lg:flex lg:h-screen lg:w-64 lg:shrink-0 lg:flex-col lg:border-b-0 lg:border-r">
-        <div className="flex items-center justify-between gap-3 px-4 py-3 lg:px-5 lg:py-6">
+        <div className="flex items-center justify-between gap-3 px-4 py-4 lg:px-6 lg:pb-8 lg:pt-8">
           <Brand />
         </div>
         <div className="px-3 pb-3 lg:flex-1 lg:px-4">

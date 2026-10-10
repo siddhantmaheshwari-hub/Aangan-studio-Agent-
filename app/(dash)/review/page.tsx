@@ -21,12 +21,12 @@ export default async function ReviewPage({ searchParams }: { searchParams: Promi
 
       <nav aria-label="Filter by type" className="mb-5 flex flex-wrap gap-2 text-sm">
         <Link href={`/review?source=${source}`} aria-current={!kind ? "page" : undefined}
-          className={`inline-flex min-h-9 items-center rounded-full border px-3.5 ${!kind ? "border-sage/40 bg-sage-soft font-semibold text-sage-deep" : "border-line bg-surface text-fg-2 hover:text-fg"}`}>
+          className={`inline-flex min-h-9 items-center rounded-full border px-3.5 ${!kind ? "border-forest bg-forest font-semibold text-on-forest" : "border-line bg-surface text-fg-2 hover:text-fg"}`}>
           All <span className="ml-1.5 tabular-nums text-fg-3">{all.length}</span>
         </Link>
         {ORDER.filter((k) => count(k) > 0).map((k) => (
           <Link key={k} href={`/review?source=${source}&kind=${k}`} aria-current={kind === k ? "page" : undefined}
-            className={`inline-flex min-h-9 items-center rounded-full border px-3.5 ${kind === k ? "border-sage/40 bg-sage-soft font-semibold text-sage-deep" : "border-line bg-surface text-fg-2 hover:text-fg"}`}>
+            className={`inline-flex min-h-9 items-center rounded-full border px-3.5 ${kind === k ? "border-forest bg-forest font-semibold text-on-forest" : "border-line bg-surface text-fg-2 hover:text-fg"}`}>
             {QUEUE_KIND[k].label} <span className="ml-1.5 tabular-nums text-fg-3">{count(k)}</span>
           </Link>
         ))}

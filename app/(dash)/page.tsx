@@ -57,7 +57,7 @@ export default async function OverviewPage({ searchParams }: { searchParams: Pro
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div>
           <p className="eyebrow">Aangan Studio · Enquiry desk</p>
-          <h1 className="font-display mt-1.5 text-[30px] font-semibold leading-tight sm:text-[36px]">{greeting()}, Nikhil</h1>
+          <h1 className="font-display mt-2 text-[34px] font-semibold leading-[1.05] tracking-tight sm:text-[44px]">{greeting()}, Nikhil</h1>
           <p className="mt-1 text-sm text-fg-2">Here&apos;s how the phone enquiries are going.</p>
         </div>
         <div className="flex flex-wrap items-center gap-3">
@@ -76,34 +76,60 @@ export default async function OverviewPage({ searchParams }: { searchParams: Pro
 
       {/* Row 1 — hero + speed to lead */}
       <div className="grid gap-5 xl:grid-cols-3">
-        <section className="relative min-h-[300px] overflow-hidden rounded-3xl border border-line bg-surface shadow-card xl:col-span-2">
-          <Courtyard className="pointer-events-none absolute right-5 top-6 hidden w-[42%] max-w-[340px] sm:block" />
-          <div className="relative p-6 sm:p-8">
-            <div>
-            <p className="eyebrow">Enquiry calls · last 7 days</p>
-            <p className="font-display mt-2 text-[64px] font-semibold leading-none tabular-nums text-fg">{c.calls}</p>
-            {c.calls === 0 && (
+        <section className="overflow-hidden rounded-3xl border border-line bg-surface shadow-card xl:col-span-2">
+          <div className="grid md:grid-cols-[1.05fr_1fr]">
+            {/* Left — the headline number */}
+            <div className="flex flex-col p-6 sm:p-8">
+              <p className="eyebrow">Enquiry calls · last 7 days</p>
+              <div className="mt-3 flex flex-wrap items-end gap-3">
+                <p className="font-display text-[76px] font-semibold leading-[0.85] tabular-nums text-fg">{c.calls}</p>
+                {p.calls > 0 || c.calls > 0 ? (
+                  <span className="mb-2 inline-flex items-center rounded-full bg-sage-soft px-2.5 py-1 text-xs font-semibold text-forest">
+                    {p.calls === 0 ? "New this week" : `${c.calls >= p.calls ? "↑" : "↓"} ${Math.abs(Math.round(((c.calls - p.calls) / p.calls) * 100))}% vs last week`}
+                  </span>
+                ) : null}
+              </div>
               <p className="mt-3 max-w-xs text-sm text-fg-2">
-                {source === "replay" ? "Practice replays are dated September, so this week is empty." : "No calls this week yet. A test call lands here about a minute after it ends."}
+                {c.calls === 0
+                  ? source === "replay" ? "Practice replays are dated September, so this week is empty." : "No calls this week yet. A test call lands here about a minute after it ends."
+                  : `${c.completed} completed · ${c.calls - c.completed} missed or dropped`}
               </p>
-            )}
-            <dl className="mt-7 grid w-[19rem] max-w-full grid-cols-3 gap-2.5">
-              {([["Qualified", c.qualified], ["Booked", c.booked], ["Talk time", `${Math.round(c.seconds / 60)}m`]] as const).map(([k, v]) => (
-                <div key={k} className="rounded-2xl border border-line bg-surface-2 px-3 py-2.5">
-                  <dt className="text-xs text-fg-3">{k}</dt>
-                  <dd className="font-display mt-0.5 text-xl font-semibold tabular-nums text-fg">{v}</dd>
-                </div>
-              ))}
-            </dl>
+              <dl className="mt-auto grid grid-cols-3 gap-2.5 pt-7">
+                {([["Qualified", c.qualified], ["Booked", c.booked], ["Talk time", `${Math.round(c.seconds / 60)}m`]] as const).map(([k, v]) => (
+                  <div key={k} className="rounded-2xl border border-line bg-surface-2 px-3.5 py-3">
+                    <dt className="text-xs text-fg-3">{k}</dt>
+                    <dd className="font-display mt-1 text-2xl font-semibold tabular-nums text-fg">{v}</dd>
+                  </div>
+                ))}
+              </dl>
+            </div>
+
+            {/* Right — forest panel: the week at a glance */}
+            <div className="relative flex flex-col overflow-hidden bg-forest p-6 text-on-forest sm:p-8">
+              <Courtyard tone="dark" className="pointer-events-none absolute -right-16 -top-10 w-[105%] max-w-[480px] opacity-40" />
+              <div className="relative flex items-baseline justify-between gap-3">
+                <p className="text-xs font-semibold uppercase tracking-[0.14em] text-white/80">This week</p>
+                <p className="text-xs text-white/75">Calls per day</p>
+              </div>
+              <div className="relative mt-auto pt-10">
+                <StackedBars tone="dark" height={150} caption="Calls per day for the last 7 days, by outcome"
+                  data={days.map((d) => ({ label: d.label, values: { qualified: d.qualified, review: d.review, notFit: d.notFit, missed: d.missed } }))}
+                  series={[
+                    { key: "qualified", label: "Qualified", color: "#cfd8c3" },
+                    { key: "review", label: "Needs a person", color: "#d9c9ae" },
+                    { key: "notFit", label: "Not a fit", color: "rgb(255 255 255 / 0.38)" },
+                    { key: "missed", label: "Missed", color: "#a9b8c3" },
+                  ]} />
+                <Link href={`/calls?${s.slice(1)}`}
+                  className="mt-5 inline-flex min-h-10 items-center gap-2 rounded-xl bg-white px-4 text-sm font-semibold text-forest transition-colors duration-150 hover:bg-[#f1f3ec]">
+                  See every call <span aria-hidden>→</span>
+                </Link>
+              </div>
             </div>
           </div>
-          <Link href={`/calls?${s.slice(1)}`}
-            className="relative mb-6 ml-6 inline-flex min-h-10 items-center gap-2 rounded-xl bg-accent px-4 text-sm font-semibold text-accent-fg transition-colors duration-150 hover:bg-accent-hover sm:absolute sm:bottom-0 sm:right-0 sm:m-0 sm:rounded-none sm:rounded-tl-2xl sm:px-6 sm:py-3.5">
-            See every call <span aria-hidden>→</span>
-          </Link>
         </section>
 
-        <section className="rounded-3xl border border-line bg-beige p-6">
+        <section className="flex flex-col rounded-3xl border border-line bg-beige p-6 sm:p-7">
           <p className="eyebrow">Speed to lead</p>
           <p className="mt-1 text-xs text-fg-3">Call end → designer&apos;s inbox · target under {target} min</p>
           <div className="mt-3 flex flex-col items-center text-center">
@@ -114,7 +140,7 @@ export default async function OverviewPage({ searchParams }: { searchParams: Pro
               {ai.medianHandoffMin === null ? "Fills in after the first qualified call." : ai.medianHandoffMin <= target ? "Median handoff time — on target." : "Median handoff time — slower than target."}
             </p>
           </div>
-          <p className="mt-5 rounded-2xl border border-line bg-surface px-3.5 py-2.5 text-xs leading-relaxed text-fg-2">
+          <p className="mt-auto rounded-2xl border border-line bg-surface px-3.5 py-2.5 text-xs leading-relaxed text-fg-2">
             Callers answered within an hour convert <b className="text-fg">4×</b> better (case data).
           </p>
         </section>
@@ -130,7 +156,7 @@ export default async function OverviewPage({ searchParams }: { searchParams: Pro
 
       {/* Row 3 — decision queue + outcome mix */}
       <div className="grid gap-5 xl:grid-cols-3">
-        <Card className="xl:col-span-2" title={<>Needs your decision {queue.length > 0 && <span className="ml-1 rounded-full bg-accent px-2 py-0.5 text-xs text-accent-fg">{queue.length}</span>}</>}
+        <Card className="xl:col-span-2" title={<>Needs your decision {queue.length > 0 && <span className="ml-1 rounded-full bg-forest px-2 py-0.5 text-xs text-on-forest">{queue.length}</span>}</>}
           aside={queue.length > 4 ? <Link href={`/review?source=${source}`} className="font-semibold text-accent hover:underline">View all →</Link> : "Escalations stay for 3 days"}>
           {queue.length === 0 ? (
             <div className="flex items-center gap-3 rounded-2xl bg-surface-2 px-4 py-5 text-sm text-fg-2">
@@ -150,9 +176,9 @@ export default async function OverviewPage({ searchParams }: { searchParams: Pro
         </Card>
       </div>
 
-      {/* Row 4 — recent calls + this week */}
-      <div className="grid gap-5 xl:grid-cols-3">
-        <Card className="xl:col-span-2" title="Recent calls" aside={<Link href={`/calls?${s.slice(1)}`} className="font-semibold text-accent hover:underline">All calls →</Link>}>
+      {/* Row 4 — recent calls */}
+      <div>
+        <Card title="Recent calls" aside={<Link href={`/calls?${s.slice(1)}`} className="font-semibold text-accent hover:underline">All calls →</Link>}>
           {recent.length === 0 ? <Empty>No calls yet. Make a test call in Vaani — it appears here about a minute after it ends.</Empty> : (
             <div className="-mx-5 overflow-x-auto">
               <table className="w-full text-sm">
@@ -178,16 +204,6 @@ export default async function OverviewPage({ searchParams }: { searchParams: Pro
           )}
         </Card>
 
-        <Card title="This week" aside="Calls per day">
-          <StackedBars height={170} caption="Calls per day for the last 7 days, by outcome"
-            data={days.map((d) => ({ label: d.label, values: { qualified: d.qualified, review: d.review, notFit: d.notFit, missed: d.missed } }))}
-            series={[
-              { key: "qualified", label: "Qualified", color: "var(--c1)" },
-              { key: "review", label: "Needs a person", color: "var(--c2)" },
-              { key: "notFit", label: "Not a fit", color: "var(--c5)" },
-              { key: "missed", label: "Missed", color: "var(--c4)" },
-            ]} />
-        </Card>
       </div>
 
       {/* Row 5 — AI quality and running cost */}
