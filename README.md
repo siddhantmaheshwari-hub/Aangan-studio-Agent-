@@ -53,6 +53,10 @@ npm run telegram:setup -- --test   # saves TELEGRAM_CHAT_ID to .env.local and se
 With `--gemini`, the replay also grades Gemini's extraction field by field against the hand-labelled
 fixtures (`lib/eval.ts`) — run it after every prompt or model change.
 
+## Live
+Dashboard: https://aangan-enquiry-agent-lilac.vercel.app (password in `.env.local` → `DASHBOARD_PASSWORD`).
+Vaani agent: "Aangan Studio Enquiries". HubSpot pipeline: "Aangan Enquiries".
+
 ## Deploy (Vercel Hobby)
 - Region `iad1` (Neon is in us-east-1), daily digest cron only (Hobby allows once a day).
 - Add every key from `.env.example` in Vercel → Settings → Environment Variables (Production).
