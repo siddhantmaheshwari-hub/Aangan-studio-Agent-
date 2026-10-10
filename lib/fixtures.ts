@@ -38,7 +38,9 @@ export const FIXTURES: Fixture[] = [
   ...(synthetic.calls as FixtureCall[]).map(toFixture),
 ];
 
-/** Expected result per fixture (from CLAUDE.md). Rule IDs and flags listed must be present. */
+/** Expected result per fixture. Source: qualified.md + services.md (10 Oct) — they replaced the PROXY rules
+ *  in CLAUDE.md. Changed vs CLAUDE.md: T10 (budget clearly below → not forwarded, qualified.md §4),
+ *  T18 (services.md sets no minimum office size → a person decides), S02 (Hinjewadi is in the service area). */
 export const EXPECTED: Record<string, { status: string; rules?: string[]; flags?: string[]; noFlags?: string[] }> = {
   T01: { status: "qualified", flags: ["referral"] },
   T02: { status: "qualified", flags: ["price_asked"] },
@@ -49,7 +51,7 @@ export const EXPECTED: Record<string, { status: string; rules?: string[]; flags?
   T07: { status: "not_qualified", rules: ["R-TIME-01"], flags: ["timeline_reoffer"] },
   T08: { status: "missed" },
   T09: { status: "escalation", rules: ["R-ESC-01"] },
-  T10: { status: "needs_review", rules: ["R-BUDGET-01"], flags: ["budget_volunteered"] },
+  T10: { status: "not_qualified", rules: ["R-BUDGET-01"], flags: ["budget_volunteered"] },
   T11: { status: "qualified", flags: ["tenant"] },
   T12: { status: "qualified", flags: ["priority"] },
   T13: { status: "qualified", flags: ["price_asked"] },
@@ -58,11 +60,15 @@ export const EXPECTED: Record<string, { status: string; rules?: string[]; flags?
   T16: { status: "qualified", flags: ["prior_contact_frustrated"] },
   T17a: { status: "missed" },
   T17b: { status: "qualified" },
-  T18: { status: "not_qualified", rules: ["R-SIZE-01"] },
+  T18: { status: "needs_review", rules: ["R-SIZE-01"] },
   T19: { status: "not_qualified", rules: ["R-TYPE-01"] },
   T20: { status: "qualified" },
   S01: { status: "needs_review", rules: ["R-PRICE-01"], flags: ["price_figure_spoken"] },
-  S02: { status: "needs_review", rules: ["R-AREA-02"] },
+  S02: { status: "qualified" },
+  S03: { status: "not_qualified", rules: ["R-AREA-01"] },
+  S04: { status: "qualified", flags: ["referral", "budget_volunteered"] },
+  S05: { status: "not_qualified", rules: ["R-TIME-01"], flags: ["timeline_reoffer"] },
+  S06: { status: "needs_review", rules: ["R-TIME-02"], flags: ["budget_volunteered"] },
 };
 
 export function checkExpected(fixtureId: string, r: { status: string | null; ruleIds: string[]; flags: string[] }): string[] {

@@ -15,7 +15,7 @@ and handed to a designer within minutes*, even after hours, with no price ever q
 | Type | Workflow/automation + voice agent + internal dashboard |
 | Primary users | Nikhil (founder, decides review items), front desk (calls back) |
 | Owner | Nikhil — owns every "needs review" and escalation decision |
-| Inputs | Vaani call transcript, recording, duration; PROXY rules; locality list |
+| Inputs | Vaani call transcript, recording, duration; qualified.md + services.md rules; service-area list |
 | Constraints | Due Sat 10 Oct; Vercel Hobby (1 cron/day); ₹100 of call minutes; Resend sandbox; no prices |
 
 ## L1 · The real problem
@@ -66,7 +66,7 @@ Evidence over assertion (every fact has the caller's words) · One next step ove
 | Approval tiers | View = free · status change = logged with reason · outbound (email/deal) = consequence preview + explicit confirm |
 | Transparency | "How the status was decided" (every rule, fired or not) · quotes · price lines highlighted · "Written by AI" label |
 | Control | Override any status, undo an override, retry a failed call |
-| Limits | PROXY rules labelled; "Not mentioned" instead of guesses; estimates labelled |
+| Limits | Each rule names its source (qualified.md / services.md); "Not mentioned" instead of guesses; estimates labelled |
 | Privacy | Caller numbers never sent to Gemini (transcript only); Vaani key never reaches the browser; recordings streamed behind login |
 
 ## L5 · Flow & structure
@@ -76,7 +76,7 @@ Evidence over assertion (every fact has the caller's words) · One next step ove
 |---|---|---|---|---|---|
 | Caller | Rings Aangan | Answers questions | | | Booked slot / honest no / callback promise |
 | Vaani (AI) | Picks up | Transcript, recording | System prompt, FAQ, Cal.com | Qualifies in call, books FIT callers | Post-call webhook |
-| App (Vercel) | Webhook / 15-min sync | Fetches call details | Earlier calls from same number; locality list; PROXY rules | Save raw → extract → normalise → price scan → rules | Status + rule IDs + flags |
+| App (Vercel) | Webhook / 15-min sync | Fetches call details | Earlier calls from same number; service area; qualified.md + services.md rules | Save raw → extract → normalise → price scan → rules | Status + rule IDs + flags |
 | Gemini (AI) | | Transcript | Field guide | Extract facts + quotes + summary | JSON (zod-validated) |
 | Neon (DB) | | | | Stores calls, enquiries, rules, notifications, costs, audit | Dashboard data |
 | HubSpot | | | | | Contact + deal (qualified only) |
@@ -163,5 +163,5 @@ round, manual keyboard + screen-reader pass.
 
 ## L10 · Next
 1. After the four live calls: compare median handoff time against the 15-minute target.
-2. Replace PROXY rules when Nikhil's qualified.md / services.md arrive; rerun the fixture table.
+2. Done 10 Oct: rules now follow qualified.md + services.md; 27/27 practice calls pass on Gemini (two runs).
 3. If Gemini grades below 95% on status-changing fields, tighten the field guide before changing model.

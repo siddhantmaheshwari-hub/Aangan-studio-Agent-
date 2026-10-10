@@ -1,19 +1,22 @@
-// Locality normalisation: alias table first, then fuzzy match. PROXY lists from CLAUDE.md.
+// Locality normalisation: alias table first, then fuzzy match.
+// Source of truth: services.md → "Service area".
 
+/** Pune city (incl. "adjoining areas") and PCMC — services.md. Kharadi and Nanded City are Pune city localities. */
 export const IN_AREA = [
-  "Kothrud", "Wakad", "Koregaon Park", "Baner", "Viman Nagar", "Kharadi", "Kalyani Nagar",
-  "Aundh", "Hadapsar", "Undri", "Pimple Saudagar", "Magarpatta", "Nanded City",
-  "Pimple Nilakh", "Chinchwad", "NIBM Road", "Kondhwa", "PCMC",
+  // Pune city
+  "Kothrud", "Baner", "Aundh", "Wakad", "Koregaon Park", "Kalyani Nagar", "Viman Nagar", "Hadapsar",
+  "Magarpatta", "NIBM Road", "Kondhwa", "Undri", "Shivane", "Warje", "Erandwane", "Deccan", "Kharadi", "Nanded City",
+  // PCMC
+  "PCMC", "Pimpri", "Chinchwad", "Pimple Saudagar", "Pimple Nilakh", "Ravet", "Hinjewadi",
 ] as const;
 
-/** Always reviewed by a person. */
-export const BORDERLINE = ["Talegaon", "Hinjewadi"] as const;
+/** Reviewed by a person. Empty since services.md: every named place is either in or out. */
+export const BORDERLINE = [] as const;
 
-/** Clearly outside Pune/PCMC. */
+/** Outside the service area — services.md: "We do not currently serve Talegaon, Lonavala, Nashik, Mumbai, or other cities". */
 export const OTHER_CITIES = [
-  "Nashik", "Mumbai", "Thane", "Navi Mumbai", "Bangalore", "Bengaluru", "Hyderabad", "Nagpur",
-  "Aurangabad", "Kolhapur", "Satara", "Solapur", "Goa", "Delhi", "Ahmedabad", "Chennai",
-  "Lonavala", "Alibaug",
+  "Talegaon", "Lonavala", "Nashik", "Mumbai", "Thane", "Navi Mumbai", "Bangalore", "Hyderabad", "Nagpur",
+  "Aurangabad", "Kolhapur", "Satara", "Solapur", "Goa", "Delhi", "Ahmedabad", "Chennai", "Alibaug",
 ] as const;
 
 /** Common spellings → canonical name. Keys are compared after cleaning (lowercase, letters only). */
@@ -23,8 +26,10 @@ const ALIASES: Record<string, string> = {
   hinjawdi: "Hinjewadi",
   "pimpri chinchwad": "PCMC",
   "pimpri-chinchwad": "PCMC",
-  pimpri: "PCMC",
   pcmc: "PCMC",
+  "talegaon dabhade": "Talegaon",
+  erandwana: "Erandwane",
+  "deccan gymkhana": "Deccan",
   koregaon: "Koregaon Park",
   "koregaon park": "Koregaon Park",
   kp: "Koregaon Park",
@@ -35,6 +40,7 @@ const ALIASES: Record<string, string> = {
   "nibm": "NIBM Road",
   "nanded": "Nanded City",
   bengaluru: "Bangalore",
+  "nibm road": "NIBM Road",
 };
 
 export type LocalityKind = "in_area" | "borderline" | "other_city" | "unknown";

@@ -17,7 +17,6 @@ export interface PipelineDeps {
   channels: Channels | null;
   hubspot: HubSpotClient | null;
   geminiPriceInrPer1M?: { input: number | null; output: number | null };
-  budgetFloorInr?: number | null;
   dashboardUrl?: string | null;
 }
 
@@ -106,7 +105,7 @@ export async function processCall(deps: PipelineDeps, incoming: IncomingCall, op
     let evaluations: RuleEvaluation[];
     if (extraction) {
       const locality = normaliseLocality(v(extraction, "locality") ?? v(extraction, "other_city"));
-      const outcome = evaluate({ extraction, locality, priceHits, budgetFloorInr: deps.budgetFloorInr ?? null });
+      const outcome = evaluate({ extraction, locality, priceHits });
       enquiryData = {
         status: outcome.status, rule_ids: outcome.ruleIds, flags: outcome.flags, missing_fields: outcome.missingFields,
         fields: extraction as unknown as Record<string, unknown>, summary: extraction.summary || null,

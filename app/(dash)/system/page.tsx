@@ -55,7 +55,7 @@ export default async function SystemPage() {
           </ol>
         </Card>
 
-        <Card title="Qualification rules" aside="PROXY until Nikhil's qualified.md arrives" className="lg:col-span-2">
+        <Card title="Qualification rules" aside="From Nikhil's qualified.md and services.md" className="lg:col-span-2">
           <ul className="grid gap-x-8 gap-y-2 text-sm sm:grid-cols-2">
             {Object.entries(RULES).map(([id, text]) => (
               <li key={id} className="flex gap-3"><span className="w-24 shrink-0 font-mono text-xs leading-5 text-fg-3">{id}</span><span className="text-fg-2">{text}</span></li>

@@ -3,10 +3,10 @@
 import { normaliseLocality } from "./locality";
 import type { Extraction, FieldName } from "./extract/schema";
 
-const BOOLS: FieldName[] = ["tenant", "budget_volunteered", "price_asked", "existing_client_complaint", "asks_for_senior", "prior_contact_frustrated", "later_start_accepted", "booked"];
+const BOOLS: FieldName[] = ["tenant", "budget_volunteered", "price_asked", "existing_client_complaint", "asks_for_senior", "prior_contact_frustrated", "later_start_accepted", "booked", "structural_changes"];
 
 export const GRADED: FieldName[] = [
-  "locality", "other_city", "property_type", "scope", "size_sqft", "completion_within_weeks", "decision_maker", "referred_by", ...BOOLS,
+  "locality", "other_city", "property_type", "scope", "size_sqft", "completion_within_weeks", "site_available_in_weeks", "decision_maker", "decider_involved", "referred_by", ...BOOLS,
 ];
 
 const val = (e: Extraction, k: FieldName) => e[k]?.value ?? null;
@@ -21,9 +21,12 @@ export function fieldMatches(k: FieldName, gold: Extraction, got: Extraction): b
   }
   if (k === "referred_by" || k === "other_city") return Boolean(g) === Boolean(a);
   if (k === "decision_maker") return (g === "someone_else") === (a === "someone_else");
+  if (k === "decider_involved") return (g === false) === (a === false); // only "false" changes the status (R-DM-01)
+  if (k === "site_available_in_weeks") return ((g as number | null) ?? 0) > 10 === ((a as number | null) ?? 0) > 10; // only the 10-week line matters
+  if (k === "scope") { const ex = (x: unknown) => ["advice_only", "furniture_only", "vastu_only", "structural_only"].includes(String(x)); return ex(g) === ex(a); }
   if (k === "completion_within_weeks") {
-    if (g === null || a === null) return g === a || (g !== null && (g as number) >= 8 && a === null);
-    return ((g as number) < 8) === ((a as number) < 8); // only the 8-week threshold matters (R-TIME-01)
+    if (g === null || a === null) return g === a || (g !== null && (g as number) >= 6 && a === null);
+    return ((g as number) < 6) === ((a as number) < 6); // only the 6-week line matters (R-TIME-01, services.md)
   }
   if (k === "size_sqft") {
     if (g === null || a === null) return g === a;

@@ -1,5 +1,5 @@
 {
-  "_about": "SYNTHETIC test calls written for this project (not from the case material). Same shape as phone_transcripts.json.",
+  "_about": "SYNTHETIC test calls. S01–S02 written for this project; S03–S06 are phone versions of real web-form enquiries F03, F05, F08 and F06 from 'Aangan Studio - Enquiry Transcripts, September 2026' (Section 3), using only the details in each form. Same shape as phone_transcripts.json.",
   "calls": [
     {
       "fixture_id": "S01",
@@ -9,11 +9,26 @@
       "duration_sec": 210,
       "call_status": "completed",
       "transcript": [
-        ["AGENT", "Hello, thank you for calling Aangan Studio. How can I help you today?"],
-        ["USER", "Hi, I'm Neha. I have a 2BHK in Baner, about 900 sq ft. Full interiors with execution, done by March."],
-        ["USER", "What's your rate roughly?"],
-        ["AGENT", "For a full home we usually work out to about ₹1,800 per sq ft, but the designer will confirm."],
-        ["USER", "Okay, let's book a consultation."]
+        [
+          "AGENT",
+          "Hello, thank you for calling Aangan Studio. How can I help you today?"
+        ],
+        [
+          "USER",
+          "Hi, I'm Neha. I have a 2BHK in Baner, about 900 sq ft. Full interiors with execution, done by March."
+        ],
+        [
+          "USER",
+          "What's your rate roughly?"
+        ],
+        [
+          "AGENT",
+          "For a full home we usually work out to about ₹1,800 per sq ft, but the designer will confirm."
+        ],
+        [
+          "USER",
+          "Okay, let's book a consultation."
+        ]
       ]
     },
     {
@@ -24,10 +39,142 @@
       "duration_sec": 180,
       "call_status": "completed",
       "transcript": [
-        ["AGENT", "Hello, thank you for calling Aangan Studio. How can I help you today?"],
-        ["USER", "Haan, mera flat Hinjawadi mein hai, 2BHK, poora interior karwana hai, January tak."],
-        ["AGENT", "Just to confirm, the flat is in Hinjewadi? Let me pass this to our team so they can confirm — someone will get back to you."],
-        ["USER", "Haan, Hinjawadi. Theek hai."]
+        [
+          "AGENT",
+          "Hello, thank you for calling Aangan Studio. How can I help you today?"
+        ],
+        [
+          "USER",
+          "Haan, mera flat Hinjawadi mein hai, 2BHK, poora interior karwana hai, January tak."
+        ],
+        [
+          "AGENT",
+          "Just to confirm, the flat is in Hinjewadi? Let me pass this to our team so they can confirm — someone will get back to you."
+        ],
+        [
+          "USER",
+          "Haan, Hinjawadi. Theek hai."
+        ]
+      ]
+    },
+    {
+      "fixture_id": "S03",
+      "call_id": "replay-S03",
+      "caller_number": "+910000000103",
+      "started_at": "2026-09-06T11:18:00+05:30",
+      "duration_sec": 150,
+      "call_status": "completed",
+      "transcript": [
+        [
+          "AGENT",
+          "Hello, thank you for calling Aangan Studio. How can I help you today?"
+        ],
+        [
+          "USER",
+          "Hi, I'm Nilesh Dhamdhere. I found you on Google. I have a 3BHK independent house in Talegaon Dabhade, near Pune, about 1,400 sq ft."
+        ],
+        [
+          "USER",
+          "We just got possession and need to do everything from scratch. Timeline is 3 to 4 months, flexible. I know Talegaon is a bit outside Pune — can you still take it up?"
+        ],
+        [
+          "AGENT",
+          "Thank you for checking. We only work in Pune city and PCMC, because our contractors need to be on site, so we can't take up a project in Talegaon. I'm sorry."
+        ]
+      ]
+    },
+    {
+      "fixture_id": "S04",
+      "call_id": "replay-S04",
+      "caller_number": "+910000000104",
+      "started_at": "2026-09-11T10:05:00+05:30",
+      "duration_sec": 260,
+      "call_status": "completed",
+      "transcript": [
+        [
+          "AGENT",
+          "Hello, thank you for calling Aangan Studio. How can I help you today?"
+        ],
+        [
+          "USER",
+          "Hi, this is Sheena Menon, Operations Head at NovaSpark Technologies. Our CEO worked with you before — Amey Joshi, on the Innov8 office in Baner."
+        ],
+        [
+          "USER",
+          "We just signed the lease on an office in Hinjewadi Phase 1, about 2,200 sq ft, shell and core. We need workstations for 55, four cabins, one boardroom, two meeting rooms, a lounge and a pantry."
+        ],
+        [
+          "AGENT",
+          "That's a full office fitout with design and execution. When do you need it ready?"
+        ],
+        [
+          "USER",
+          "Operational by January 15. Budget is 60 to 80 lakh all-in, including furniture. Speed matters — we are ready to move fast."
+        ],
+        [
+          "AGENT",
+          "Thank you, I'll pass the budget on to the designer. Would you like to book a free consultation?"
+        ]
+      ]
+    },
+    {
+      "fixture_id": "S05",
+      "call_id": "replay-S05",
+      "caller_number": "+910000000105",
+      "started_at": "2026-09-18T18:44:00+05:30",
+      "duration_sec": 170,
+      "call_status": "completed",
+      "transcript": [
+        [
+          "AGENT",
+          "Hello, thank you for calling Aangan Studio. How can I help you today?"
+        ],
+        [
+          "USER",
+          "Hi, I'm Divya Hegde. I have a 2BHK in Wakad, about 875 sq ft. We want the living room and kitchen redone."
+        ],
+        [
+          "USER",
+          "We have guests arriving from the US in 3 weeks, so it has to be done in 3 weeks maximum. Budget is 4 to 5 lakh. I know it's urgent."
+        ],
+        [
+          "AGENT",
+          "Design alone takes three to four weeks and execution follows, so we couldn't do it well in three weeks. If you're open to a later finish, we could do it properly. Would that work?"
+        ],
+        [
+          "USER",
+          "No, it really has to be before they arrive."
+        ]
+      ]
+    },
+    {
+      "fixture_id": "S06",
+      "call_id": "replay-S06",
+      "caller_number": "+910000000106",
+      "started_at": "2026-09-14T20:52:00+05:30",
+      "duration_sec": 300,
+      "call_status": "completed",
+      "transcript": [
+        [
+          "AGENT",
+          "Hello, thank you for calling Aangan Studio. How can I help you today?"
+        ],
+        [
+          "USER",
+          "Hi, I'm Preethi Nair. I read about you in a Pune Mirror article. We have a 4BHK on NIBM Road, ground floor, about 1,950 sq ft. We've lived here five years."
+        ],
+        [
+          "USER",
+          "The kitchen needs full replacement, all bedrooms except the master need redoing, the living room needs new flooring and design, and we want to add a proper study."
+        ],
+        [
+          "AGENT",
+          "That's a substantial redesign with execution. When would the site be available?"
+        ],
+        [
+          "USER",
+          "We're planning to move out temporarily for execution, starting February 2027. Budget is 35 to 40 lakh for this scope, not flexible upward. We've shortlisted three studios."
+        ]
       ]
     }
   ]

@@ -228,7 +228,7 @@ export default async function CallDetailPage({ params, searchParams }: { params:
       </div>
 
       {enquiry && (
-        <Card title="How the status was decided" aside="PROXY rules · decided in code, not by AI">
+        <Card title="How the status was decided" aside="Rules from qualified.md + services.md · decided in code, not by AI">
           {fired.length === 0 ? (
             <p className="text-sm">No rule fired, so the enquiry is <b>Qualified</b>.</p>
           ) : (

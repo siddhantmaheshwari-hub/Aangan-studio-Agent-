@@ -115,24 +115,32 @@ Flags: `price_asked`, `price_figure_spoken` (agent said a number — critical), 
 `referral`, `tenant`, `caller_not_decision_maker`, `prior_contact_frustrated`, `timeline_reoffer`,
 `booked`, `priority`.
 
-## Rules (PROXY until Nikhil's qualified.md / services.md arrive; label them PROXY in the UI)
-| ID | Rule | Result |
-|---|---|---|
-| R-ESC-01 | Existing project complaint, or asks for Nikhil/a senior person | escalation |
-| R-AREA-01 | Location clearly in another city (e.g. Nashik) | not_qualified |
-| R-AREA-02 | Locality not on the in-area list and not another city | needs_review |
-| R-SCOPE-01 | Advice/consultation only, no execution | not_qualified |
-| R-TYPE-01 | Restaurant, hospitality or gym | not_qualified |
-| R-TYPE-02 | Other non-residential, non-office type | needs_review |
-| R-SIZE-01 | Commercial under 500 sq ft | not_qualified |
-| R-SIZE-02 | Commercial over 3,000 sq ft | needs_review |
-| R-TIME-01 | Wants completion in under 8 weeks and declined a later start | not_qualified + timeline_reoffer |
-| R-BUDGET-01 | Budget volunteered and no approved floor configured | needs_review |
-| R-COMPLETE-01 | Missing any of: location, project type, scope, timeline | incomplete |
-In-area list: Kothrud, Wakad, Koregaon Park, Baner, Viman Nagar, Kharadi, Kalyani Nagar, Aundh,
-Hadapsar, Undri, Pimple Saudagar, Magarpatta, Nanded City, Pimple Nilakh, Chinchwad, NIBM Road,
-Kondhwa. Borderline (always review): Talegaon, Hinjewadi. Caller not being the owner never
-disqualifies.
+## Rules (source of truth: docs/rules/qualified.md + docs/rules/services.md, received 10 Oct)
+These replaced the PROXY rules. Code: `lib/rules.ts`. pricing.md stays outside the repo prompts:
+only its lowest rates live in `lib/budgetCheck.ts`, used by code, never sent to Vaani/Gemini or shown.
+| ID | Rule | Result | Source |
+|---|---|---|---|
+| R-ESC-01 | Existing project complaint, or demands Nikhil/a senior person | escalation | CLAUDE.md |
+| R-AREA-01 | Outside Pune city/PCMC (Talegaon, Lonavala, Nashik, Mumbai…) | not_qualified | services.md |
+| R-AREA-02 | Locality not recognised | needs_review | — |
+| R-SCOPE-01 | Advice/decor only, furniture sourcing only, Vastu only, structural work | not_qualified | qualified §1, services |
+| R-SCOPE-02 | Structural changes inside a project | needs_review | services.md |
+| R-TYPE-01 | Restaurant, hotel, retail store, gym | not_qualified | services.md |
+| R-TYPE-02 | Other type | needs_review | — |
+| R-SIZE-01 | Commercial under 500 sq ft (no minimum in services.md) | needs_review | — |
+| R-SIZE-02 | Commercial over ~3,000 sq ft | needs_review | services.md |
+| R-TIME-01 | Must be ready in under 6 weeks, later finish declined | not_qualified | services.md |
+| R-TIME-02 | Site not available for execution within 10 weeks | needs_review | qualified §3 |
+| R-BUDGET-01 | Volunteered budget < half the internal minimum for the scope | not_qualified | qualified §4 |
+| R-BUDGET-02 | Volunteered budget below the internal minimum | needs_review | qualified §4 |
+| R-DM-01 | Caller not the decider and the decider not involved | needs_review | qualified §5 |
+| R-PRICE-01 | Agent spoke a price figure | needs_review | pricing.md |
+| R-COMPLETE-01 | Missing location or project type | incomplete | — |
+No budget mentioned → qualified (never probe). Scope too vague to judge a budget → qualified + noted.
+In-area (services.md): Kothrud, Baner, Aundh, Wakad, Koregaon Park, Kalyani Nagar, Viman Nagar,
+Hadapsar, Magarpatta, NIBM, Kondhwa, Undri, Shivane, Warje, Erandwane, Deccan and adjoining Pune areas
+(incl. Kharadi, Nanded City); PCMC: Pimpri, Chinchwad, Pimple Saudagar, Pimple Nilakh, Ravet, Hinjewadi.
+Renting never disqualifies (unless structural changes are needed).
 
 ## Dashboard (must work end to end)
 - Login (single shared password from env is fine for today).
@@ -159,13 +167,14 @@ then with Gemini. Expected results:
 | T08 | missed; call row only |
 | T09 | escalation R-ESC-01; urgent email; no HubSpot deal |
 | Synthetic | Resend returns an error → one retry → Telegram fallback if configured; both recorded. Both fail → `pipeline_errors` row and dashboard shows "not delivered" |
-| T10 | needs_review R-BUDGET-01 + `budget_volunteered` |
+| T10 | not_qualified R-BUDGET-01 + `budget_volunteered` (₹1–1.5 lakh for 2 rooms is clearly below — qualified.md §4) |
 | T11 | qualified + `tenant` · T14 qualified + `caller_not_decision_maker` |
 | T16 | qualified + `prior_contact_frustrated` |
 | T17a + T17b | one enquiry, two calls; T17a disconnected |
-| T18 | not_qualified R-SIZE-01 · T19 not_qualified R-TYPE-01 |
+| T18 | needs_review R-SIZE-01 (no minimum in services.md) · T19 not_qualified R-TYPE-01 |
 | Synthetic | AGENT says "₹1,800 per sq ft" → `price_figure_spoken` + review |
-| Synthetic | "Hinjawadi" → normalised to Hinjewadi → needs_review R-AREA-02 |
+| Synthetic | "Hinjawadi" → normalised to Hinjewadi → qualified (PCMC, services.md) |
+| S03–S06 | Phone versions of web forms F03 (Talegaon → not_qualified R-AREA-01), F05 (office → qualified), F08 (3 weeks → not_qualified R-TIME-01), F06 (site free Feb 2027 → needs_review R-TIME-02) |
 | All | replay twice → no duplicates; every Gemini call writes a cost_event |
 Then live test calls per `TEST_CALLS.md`. Report pass/fail honestly; list anything mocked.
 

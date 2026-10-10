@@ -11,7 +11,7 @@ and recording.
 |---|---|---|
 | **Trigger** | Call ends → Vaani post-call webhook; fallback: GitHub Actions every 15 min calls `/api/sync` | `app/api/vaani/webhook`, `app/api/sync`, `.github/workflows/sync.yml` |
 | **Input** | Call details, transcript, duration, recording from Vaani REST | `lib/vaani.ts` |
-| **Context** | In-area locality list + aliases, PROXY qualification rules, earlier calls from the same number (one enquiry) | `lib/locality.ts`, `lib/rules.ts`, `lib/pipeline.ts` |
+| **Context** | Service area + aliases (services.md), Nikhil's five criteria (qualified.md), earlier calls from the same number (one enquiry) | `lib/locality.ts`, `lib/rules.ts`, `lib/pipeline.ts` |
 | **Processing** | Save raw call → extract → normalise locality → price scanner on AGENT turns → rules engine → Neon | `lib/pipeline.ts`, `lib/priceScanner.ts`, `migrations/` |
 | **AI** | Vaani (the call itself, closed bubble). Gemini extracts fields + caller quotes + 2-line summary to a zod-validated schema; it never decides the status | `lib/extract/gemini.ts`, `lib/extract/schema.ts` |
 | **Output** | Dashboard; HubSpot contact + deal (qualified only); Resend handoff / urgent escalation / failure alerts / daily digest; Telegram to the team chat (alongside email) | `app/(dash)`, `lib/hubspot.ts`, `lib/notify.ts`, `app/api/cron/digest` |
@@ -19,7 +19,9 @@ and recording.
 ## Statuses (code decides, precedence high → low)
 `escalation` > `missed` > `not_qualified` > `needs_review` > `incomplete` > `qualified`.
 Every rule is evaluated and stored (`rule_evaluations`), so the call page shows "why this status".
-Rules are **PROXY** until Nikhil's qualified.md / services.md arrive.
+Rules come from `docs/rules/qualified.md` and `docs/rules/services.md`. pricing.md is never sent to
+Vaani or Gemini; only its lowest rates live in `lib/budgetCheck.ts` to catch a volunteered budget that is
+clearly too low (qualified.md §4), and the dashboard never shows them.
 
 Deviation from CLAUDE.md, made so the expected fixture results hold: **R-COMPLETE-01** fires only
 when *location or project type* is missing. T11, T13, T14 and T16 are expected `qualified` without

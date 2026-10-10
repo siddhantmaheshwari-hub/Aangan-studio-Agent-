@@ -7,7 +7,7 @@ import { dealAmount, STUDIO_AVERAGE_INR } from "@/lib/hubspot";
 
 describe("locality", () => {
   it("normalises aliases", () => {
-    expect(normaliseLocality("Hinjawadi")).toMatchObject({ normalised: "Hinjewadi", kind: "borderline", confidence: 1 });
+    expect(normaliseLocality("Hinjawadi")).toMatchObject({ normalised: "Hinjewadi", kind: "in_area", confidence: 1 }); // services.md: PCMC
     expect(normaliseLocality("Pimpri Chinchwad")).toMatchObject({ normalised: "PCMC", kind: "in_area" });
     expect(normaliseLocality("Koregaon")).toMatchObject({ normalised: "Koregaon Park", kind: "in_area" });
   });
@@ -23,8 +23,13 @@ describe("locality", () => {
     expect(normaliseLocality("Lohegaon").kind).toBe("unknown");
     expect(normaliseLocality("")).toMatchObject({ normalised: null, kind: "unknown" });
   });
-  it("recognises other cities", () => {
+  it("recognises places outside the service area (services.md)", () => {
     expect(normaliseLocality("Nashik").kind).toBe("other_city");
+    expect(normaliseLocality("Talegaon Dabhade, near Pune")).toMatchObject({ normalised: "Talegaon", kind: "other_city" });
+    expect(normaliseLocality("Lonavala").kind).toBe("other_city");
+  });
+  it("knows the newer service-area names (services.md)", () => {
+    for (const a of ["Shivane", "Warje", "Erandwane", "Deccan", "Ravet", "Pimpri", "Hinjewadi Phase 1"]) expect(normaliseLocality(a).kind).toBe("in_area");
   });
 });
 
@@ -82,12 +87,59 @@ describe("rules", () => {
     e.size_sqft = { value: 4000, quote: null };
     expect(run(e)).toMatchObject({ status: "needs_review", ruleIds: ["R-SIZE-02"] });
   });
-  it("budget above a configured floor passes", () => {
+  it("budget (qualified.md §4): clearly below → not forwarded; a bit below → review; fine or vague → qualified", () => {
     const e = base();
     e.budget_volunteered = { value: true, quote: null };
+    e.rooms_count = { value: 2, quote: null };
+    e.budget_max_inr = { value: 150_000, quote: null }; // T10-style: 1–1.5 lakh for kitchen + bedroom
+    expect(run(e)).toMatchObject({ status: "not_qualified", ruleIds: ["R-BUDGET-01"] });
+    e.budget_max_inr = { value: 500_000, quote: null };
+    expect(run(e)).toMatchObject({ status: "needs_review", ruleIds: ["R-BUDGET-02"] });
     e.budget_max_inr = { value: 1_500_000, quote: null };
-    expect(run(e, { budgetFloorInr: 800_000 }).status).toBe("qualified");
-    expect(run(e).status).toBe("needs_review");
+    expect(run(e).status).toBe("qualified");
+    e.rooms_count = { value: null, quote: null };
+    e.budget_max_inr = { value: 2_000_000, quote: null };
+    expect(run(e).status).toBe("qualified"); // scope too vague → treat as qualified, note it
+  });
+  it("no budget mentioned → qualified (never probed)", () => expect(run().ruleIds).toEqual([]));
+  it("services.md exclusions are declined", () => {
+    for (const scope of ["advice_only", "furniture_only", "vastu_only", "structural_only"] as const) {
+      const e = base();
+      e.scope = { value: scope, quote: null };
+      expect(run(e)).toMatchObject({ status: "not_qualified", ruleIds: ["R-SCOPE-01"] });
+    }
+    const shop = base();
+    shop.property_type = { value: "retail", quote: null };
+    expect(run(shop)).toMatchObject({ status: "not_qualified", ruleIds: ["R-TYPE-01"] });
+  });
+  it("structural changes inside a project → a person decides", () => {
+    const e = base();
+    e.structural_changes = { value: true, quote: null };
+    expect(run(e)).toMatchObject({ status: "needs_review", ruleIds: ["R-SCOPE-02"] });
+  });
+  it("timeline: under 6 weeks declined (services.md); 6–8 weeks fine; site free only after 10 weeks → review", () => {
+    const e = base();
+    e.completion_within_weeks = { value: 5, quote: null };
+    expect(run(e).ruleIds).toContain("R-TIME-01");
+    e.completion_within_weeks = { value: 7, quote: null };
+    expect(run(e).status).toBe("qualified");
+    e.site_available_in_weeks = { value: 20, quote: null };
+    expect(run(e)).toMatchObject({ status: "needs_review", ruleIds: ["R-TIME-02"] });
+  });
+  it("decision-maker (qualified.md §5): researching for someone not involved → review; decider attending → qualified", () => {
+    const e = base();
+    e.decision_maker = { value: "someone_else", quote: null };
+    e.decider_involved = { value: false, quote: null };
+    expect(run(e)).toMatchObject({ status: "needs_review", ruleIds: ["R-DM-01"] });
+    e.decider_involved = { value: true, quote: null };
+    expect(run(e)).toMatchObject({ status: "qualified" });
+    expect(run(e).flags).toContain("caller_not_decision_maker");
+  });
+  it("small office: no minimum in services.md → review, not declined", () => {
+    const e = base();
+    e.property_type = { value: "office", quote: null };
+    e.size_sqft = { value: 180, quote: null };
+    expect(run(e)).toMatchObject({ status: "needs_review", ruleIds: ["R-SIZE-01"] });
   });
   it("missing location → incomplete; missing timeline only shows as missing", () => {
     const e = base();
@@ -98,7 +150,7 @@ describe("rules", () => {
     expect(r.missingFields).toContain("timeline");
   });
   it("records every rule, fired or not", () => {
-    expect(run().evaluations.length).toBeGreaterThanOrEqual(13);
+    expect(run().evaluations.length).toBe(17);
   });
 });
 

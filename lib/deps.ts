@@ -36,7 +36,6 @@ export function getDeps(opts: { store?: Store; dryRun?: boolean; fake?: boolean 
     channels: opts.dryRun ? null : getChannels(e),
     hubspot: opts.dryRun ? null : hubspotClient(e.hubspotToken, e.hubspotPipelineId),
     geminiPriceInrPer1M: { input: e.geminiInPer1M, output: e.geminiOutPer1M },
-    budgetFloorInr: e.budgetFloorInr,
     dashboardUrl: e.appUrl,
   };
 }

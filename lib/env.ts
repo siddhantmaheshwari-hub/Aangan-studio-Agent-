@@ -32,7 +32,6 @@ export function env() {
     dashboardPassword: s("DASHBOARD_PASSWORD"),
     cronSecret: s("CRON_SECRET"),
     appUrl: s("APP_URL") ?? (process.env.VERCEL_PROJECT_PRODUCTION_URL ? `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}` : null),
-    budgetFloorInr: n("APPROVED_BUDGET_FLOOR_INR"),
     vaaniCostPerMinInr: n("VAANI_COST_PER_MIN_INR"),
     geminiInPer1M: n("GEMINI_COST_PER_1M_INPUT_TOKENS_INR"),
     geminiOutPer1M: n("GEMINI_COST_PER_1M_OUTPUT_TOKENS_INR"),
