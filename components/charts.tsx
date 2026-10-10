@@ -52,11 +52,11 @@ export function StackedBars({ data, series, height = 150, caption }: {
           <span key={s.key} className="inline-flex items-center gap-1.5"><span aria-hidden className="h-2.5 w-2.5 rounded-sm" style={{ background: s.color }} />{s.label}</span>
         ))}
       </figcaption>
-      <table className="sr-only">
+      <div className="sr-only"><table>
         <caption>{caption}</caption>
         <thead><tr><th scope="col">Day</th>{series.map((s) => <th key={s.key} scope="col">{s.label}</th>)}</tr></thead>
         <tbody>{data.map((d) => <tr key={d.label}><th scope="row">{d.label}</th>{series.map((s) => <td key={s.key}>{d.values[s.key] ?? 0}</td>)}</tr>)}</tbody>
-      </table>
+      </table></div>
     </figure>
   );
 }

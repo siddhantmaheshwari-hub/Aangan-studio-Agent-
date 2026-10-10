@@ -103,7 +103,7 @@ export function Kpi({ label, value, delta, icon, note, href }: {
   const body = (
     <>
       <div className="flex items-center gap-2.5 text-sm text-fg-2">
-        {icon && <span aria-hidden className="inline-flex h-8 w-8 items-center justify-center rounded-lg bg-sage-soft text-sage-deep">{icon}</span>}
+        {icon && <span aria-hidden className="inline-flex h-8 w-8 items-center justify-center rounded-lg bg-beige text-sage-deep">{icon}</span>}
         {label}
       </div>
       <div className="font-display mt-3 text-[32px] font-semibold leading-none tabular-nums text-fg">{value}</div>

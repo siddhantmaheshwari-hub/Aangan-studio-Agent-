@@ -1,9 +1,10 @@
 // Overview. One job: show the founder what needs a decision, then how the desk is doing.
 import Link from "next/link";
 import { Donut, Gauge, StackedBars } from "@/components/charts";
+import { Courtyard } from "@/components/Courtyard";
 import { QueueList } from "@/components/QueueList";
 import { SourceTabs } from "@/components/SourceTabs";
-import { ButtonLink, Card, dur, Empty, Kpi, StatusBadge } from "@/components/ui";
+import { Card, dur, Empty, Kpi, StatusBadge } from "@/components/ui";
 import { env } from "@/lib/env";
 import { aiQuality, lastSevenDays, outcomeMix, weekCompare } from "@/lib/insights";
 import { STATUS_LABEL } from "@/lib/labels";
@@ -41,74 +42,83 @@ export default async function OverviewPage({ searchParams }: { searchParams: Pro
   const costPerCall = o.completed && o.vaaniCostInr !== null ? Math.round(((o.vaaniCostInr ?? 0) + (o.geminiCostInr ?? 0)) / o.completed) : null;
   const target = 15;
 
+  const strip: [string, string, string, string][] = [
+    ["Read cleanly by AI", ai.enquiries ? `${Math.round((ai.extractedOk / ai.enquiries) * 100)}%` : "—", "calls the AI understood", ""],
+    ["Prices spoken", String(ai.priceIncidents), "must stay 0", ai.priceIncidents ? "text-danger" : "text-ok"],
+    ["Your overrides", String(ai.overridden), "decisions you changed", ""],
+    ["Delivered", ai.deliveredPct === null ? "—" : `${ai.deliveredPct}%`, "email / Telegram", ""],
+    ["Vaani (est.)", o.vaaniCostInr === null ? "—" : `₹${o.vaaniCostInr.toLocaleString("en-IN")}`, `${o.vaaniMinutes} min × ₹${vaaniRate ?? "?"}`, ""],
+    ["Per call (est.)", costPerCall === null ? "—" : `₹${costPerCall}`, o.geminiCostInr === null ? "Gemini price not set" : `Gemini ₹${o.geminiCostInr}`, ""],
+  ];
+
   return (
-    <div className="space-y-6">
+    <div className="space-y-7">
+      {/* Header — greeting, date chip, data source */}
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div>
-          <h1 className="font-display text-[28px] font-semibold leading-tight sm:text-[34px]">{greeting()}, Nikhil</h1>
-          <p className="mt-1 text-sm text-fg-2">Here&apos;s how the enquiry desk is doing — {ist({ weekday: "long", day: "numeric", month: "long" })}.</p>
+          <p className="eyebrow">Aangan Studio · Enquiry desk</p>
+          <h1 className="font-display mt-1.5 text-[30px] font-semibold leading-tight sm:text-[36px]">{greeting()}, Nikhil</h1>
+          <p className="mt-1 text-sm text-fg-2">Here&apos;s how the phone enquiries are going.</p>
         </div>
-        <SourceTabs source={source} base="/" />
+        <div className="flex flex-wrap items-center gap-3">
+          <span className="inline-flex min-h-10 items-center gap-2 rounded-xl border border-line bg-surface px-3.5 text-sm text-fg-2 shadow-card">
+            {I.cal}{ist({ weekday: "short", day: "numeric", month: "short", year: "numeric" })}
+          </span>
+          <SourceTabs source={source} base="/" />
+        </div>
       </div>
 
       {source !== "live" && (
-        <p className="rounded-xl bg-info-bg px-4 py-2.5 text-sm text-info">
+        <p className="rounded-xl border border-line bg-surface-2 px-4 py-2.5 text-sm text-fg-2">
           You&apos;re looking at {source === "replay" ? "practice replays (test data from the case transcripts)" : "live calls and practice replays together"}. Practice replays send no emails and create no deals.
         </p>
       )}
 
       {/* Row 1 — hero + speed to lead */}
-      <div className="grid gap-5 lg:grid-cols-3">
-        <section className="relative overflow-hidden rounded-3xl p-6 text-white shadow-card lg:col-span-2 sm:p-7"
-          style={{ background: "linear-gradient(135deg, #3f4a38 0%, #56634d 50%, #63725a 100%)" }}>
-          <svg aria-hidden viewBox="0 0 200 200" className="pointer-events-none absolute -right-16 -top-20 h-72 w-72">
-            <circle cx="100" cy="100" r="60" fill="#fff" opacity="0.07" />
-            <circle cx="100" cy="100" r="85" fill="none" stroke="#fff" strokeOpacity="0.08" strokeWidth="1.5" />
-            <circle cx="100" cy="100" r="98" fill="none" stroke="#fff" strokeOpacity="0.05" strokeWidth="1.5" />
-          </svg>
-          <div className="relative flex flex-wrap items-start justify-between gap-6">
+      <div className="grid gap-5 xl:grid-cols-3">
+        <section className="relative min-h-[300px] overflow-hidden rounded-3xl border border-line shadow-card xl:col-span-2"
+          style={{ background: "linear-gradient(120deg, #f4eee4 0%, #efe6d8 55%, #e9dfcd 100%)" }}>
+          <Courtyard className="pointer-events-none absolute right-5 top-6 hidden w-[42%] max-w-[340px] sm:block" />
+          <div className="relative p-6 sm:p-8">
             <div>
-              <p className="text-sm text-white/85">Enquiry calls · last 7 days</p>
-              <p className="font-display mt-1 text-6xl font-semibold leading-none tabular-nums">{c.calls}</p>
-              {c.calls === 0 && (
-                <p className="mt-2 max-w-xs text-sm text-white/85">
-                  {source === "replay" ? "Practice replays are dated September, so this week is empty. See the outcome mix below." : "No calls this week yet. Make a test call in Vaani and it lands here about a minute after it ends."}
-                </p>
-              )}
-              <dl className="mt-6 flex flex-wrap gap-6 text-sm">
-                <div><dt className="text-white/80">Qualified</dt><dd className="font-display text-2xl font-semibold tabular-nums">{c.qualified}</dd></div>
-                <div><dt className="text-white/80">Booked in call</dt><dd className="font-display text-2xl font-semibold tabular-nums">{c.booked}</dd></div>
-                <div><dt className="text-white/80">Talk time</dt><dd className="font-display text-2xl font-semibold tabular-nums">{Math.round(c.seconds / 60)} min</dd></div>
-              </dl>
-            </div>
-            <div className="w-full max-w-sm rounded-2xl bg-white/95 p-4 text-fg sm:w-72">
-              <StackedBars height={130} caption="Calls per day for the last 7 days, by outcome"
-                data={days.map((d) => ({ label: d.label, values: { qualified: d.qualified, review: d.review, notFit: d.notFit, missed: d.missed } }))}
-                series={[
-                  { key: "qualified", label: "Qualified", color: "var(--c1)" },
-                  { key: "review", label: "Needs a person", color: "var(--c2)" },
-                  { key: "notFit", label: "Not a fit", color: "var(--c5)" },
-                  { key: "missed", label: "Missed", color: "var(--c4)" },
-                ]} />
+            <p className="eyebrow">Enquiry calls · last 7 days</p>
+            <p className="font-display mt-2 text-[64px] font-semibold leading-none tabular-nums text-fg">{c.calls}</p>
+            {c.calls === 0 && (
+              <p className="mt-3 max-w-xs text-sm text-fg-2">
+                {source === "replay" ? "Practice replays are dated September, so this week is empty." : "No calls this week yet. A test call lands here about a minute after it ends."}
+              </p>
+            )}
+            <dl className="mt-7 grid w-[19rem] max-w-full grid-cols-3 gap-2.5">
+              {([["Qualified", c.qualified], ["Booked", c.booked], ["Talk time", `${Math.round(c.seconds / 60)}m`]] as const).map(([k, v]) => (
+                <div key={k} className="rounded-2xl border border-white/70 bg-white/60 px-3 py-2.5">
+                  <dt className="text-xs text-fg-3">{k}</dt>
+                  <dd className="font-display mt-0.5 text-xl font-semibold tabular-nums text-fg">{v}</dd>
+                </div>
+              ))}
+            </dl>
             </div>
           </div>
-          <Link href={`/calls?${s.slice(1)}`} className="relative mt-6 inline-flex min-h-10 items-center gap-2 rounded-xl bg-white/15 px-4 text-sm font-semibold text-white ring-1 ring-white/30 transition-colors duration-150 hover:bg-white/25">
+          <Link href={`/calls?${s.slice(1)}`}
+            className="relative mb-6 ml-6 inline-flex min-h-10 items-center gap-2 rounded-xl bg-fg px-4 text-sm font-semibold text-bg transition-colors duration-150 hover:bg-accent sm:absolute sm:bottom-0 sm:right-0 sm:m-0 sm:rounded-none sm:rounded-tl-2xl sm:px-6 sm:py-3.5">
             See every call <span aria-hidden>→</span>
           </Link>
         </section>
 
-        <Card title="Speed to lead">
-          <p className="-mt-2 mb-2 text-xs text-fg-3">Call end → designer&apos;s inbox · target under {target} min</p>
-          <div className="flex flex-col items-center text-center">
+        <section className="rounded-3xl border border-line bg-sand-soft p-6 shadow-card">
+          <p className="eyebrow">Speed to lead</p>
+          <p className="mt-1 text-xs text-fg-3">Call end → designer&apos;s inbox · target under {target} min</p>
+          <div className="mt-3 flex flex-col items-center text-center">
             <Gauge value={ai.medianHandoffMin} max={target * 2}
               label={ai.medianHandoffMin === null ? "—" : `${ai.medianHandoffMin}m`}
               caption={ai.medianHandoffMin === null ? "No handoffs yet" : `Median ${ai.medianHandoffMin} minutes from call end to handoff`} />
             <p className="mt-1 text-sm text-fg-2">
-              {ai.medianHandoffMin === null ? "No handoff sent yet — this fills in after the first qualified call." : ai.medianHandoffMin <= target ? "Median handoff time — on target." : "Median handoff time — slower than target."}
+              {ai.medianHandoffMin === null ? "Fills in after the first qualified call." : ai.medianHandoffMin <= target ? "Median handoff time — on target." : "Median handoff time — slower than target."}
             </p>
-            <p className="mt-3 rounded-xl bg-sage-soft px-3 py-2 text-xs text-sage-deep">Callers answered within 1 hour convert 4× better (case data).</p>
           </div>
-        </Card>
+          <p className="mt-5 rounded-2xl bg-surface/80 px-3.5 py-2.5 text-xs leading-relaxed text-fg-2">
+            Callers answered within an hour convert <b className="text-fg">4×</b> better (case data).
+          </p>
+        </section>
       </div>
 
       {/* Row 2 — KPIs */}
@@ -120,12 +130,12 @@ export default async function OverviewPage({ searchParams }: { searchParams: Pro
       </div>
 
       {/* Row 3 — decision queue + outcome mix */}
-      <div className="grid gap-5 lg:grid-cols-3">
-        <Card className="lg:col-span-2" title={<>Needs your decision {queue.length > 0 && <span className="ml-1 rounded-full bg-accent px-2 py-0.5 text-xs text-accent-fg">{queue.length}</span>}</>}
+      <div className="grid gap-5 xl:grid-cols-3">
+        <Card className="xl:col-span-2" title={<>Needs your decision {queue.length > 0 && <span className="ml-1 rounded-full bg-fg px-2 py-0.5 text-xs text-bg">{queue.length}</span>}</>}
           aside={queue.length > 4 ? <Link href={`/review?source=${source}`} className="font-semibold text-accent hover:underline">View all →</Link> : "Escalations stay for 3 days"}>
           {queue.length === 0 ? (
-            <div className="flex items-center gap-3 rounded-xl bg-sage-soft px-4 py-5 text-sm text-sage-deep">
-              <span aria-hidden className="text-lg">✓</span>
+            <div className="flex items-center gap-3 rounded-2xl bg-surface-2 px-4 py-5 text-sm text-fg-2">
+              <span aria-hidden className="inline-flex h-7 w-7 items-center justify-center rounded-full bg-beige text-sage-deep">✓</span>
               {o.calls === 0 ? "Nothing yet — calls appear here after Vaani sends them." : "All clear. Every call is handed off or closed by the rules."}
             </div>
           ) : <QueueList items={queue.slice(0, 4)} />}
@@ -141,19 +151,19 @@ export default async function OverviewPage({ searchParams }: { searchParams: Pro
         </Card>
       </div>
 
-      {/* Row 4 — recent calls + AI & cost */}
-      <div className="grid gap-5 lg:grid-cols-3">
-        <Card className="lg:col-span-2" title="Recent calls" aside={<Link href={`/calls?${s.slice(1)}`} className="font-semibold text-accent hover:underline">All calls →</Link>}>
+      {/* Row 4 — recent calls + this week */}
+      <div className="grid gap-5 xl:grid-cols-3">
+        <Card className="xl:col-span-2" title="Recent calls" aside={<Link href={`/calls?${s.slice(1)}`} className="font-semibold text-accent hover:underline">All calls →</Link>}>
           {recent.length === 0 ? <Empty>No calls yet. Make a test call in Vaani — it appears here about a minute after it ends.</Empty> : (
             <div className="-mx-5 overflow-x-auto">
               <table className="w-full text-sm">
                 <caption className="sr-only">Six most recent calls</caption>
                 <thead className="text-left text-xs text-fg-3">
-                  <tr>{["Caller", "When", "Length", "Status"].map((h) => <th key={h} scope="col" className="px-5 pb-2 font-medium">{h}</th>)}</tr>
+                  <tr className="border-b border-line">{["Caller", "When", "Length", "Status"].map((h) => <th key={h} scope="col" className="px-5 pb-2.5 font-medium">{h}</th>)}</tr>
                 </thead>
                 <tbody className="divide-y divide-line">
                   {recent.map((r) => (
-                    <tr key={r.id} className="hover:bg-surface-2">
+                    <tr key={r.id} className="transition-colors duration-150 hover:bg-surface-2">
                       <td className="px-5 py-3">
                         <Link href={`/calls/${r.id}`} className="font-medium text-fg hover:text-accent hover:underline">{r.caller_name ?? r.caller_number ?? "Unknown caller"}</Link>
                         <div className="text-xs text-fg-3">{r.area ?? (r.source === "replay" ? "Practice replay" : "")}</div>
@@ -169,26 +179,34 @@ export default async function OverviewPage({ searchParams }: { searchParams: Pro
           )}
         </Card>
 
-        <Card title="AI & running cost" aside="Estimates labelled">
-          <dl className="space-y-3 text-sm">
-            <div className="flex justify-between gap-3"><dt className="text-fg-2">Calls the AI read cleanly</dt>
-              <dd className="font-semibold tabular-nums">{ai.enquiries ? `${Math.round((ai.extractedOk / ai.enquiries) * 100)}%` : "—"}</dd></div>
-            <div className="flex justify-between gap-3"><dt className="text-fg-2">Prices spoken by the agent <span className="text-fg-3">(must be 0)</span></dt>
-              <dd className={`font-semibold tabular-nums ${ai.priceIncidents ? "text-danger" : "text-ok"}`}>{ai.priceIncidents}</dd></div>
-            <div className="flex justify-between gap-3"><dt className="text-fg-2">Your overrides</dt><dd className="font-semibold tabular-nums">{ai.overridden}</dd></div>
-            <div className="flex justify-between gap-3"><dt className="text-fg-2">Emails / Telegram delivered</dt>
-              <dd className="font-semibold tabular-nums">{ai.deliveredPct === null ? "—" : `${ai.deliveredPct}%`}</dd></div>
-            <div className="border-t border-line pt-3" />
-            <div className="flex justify-between gap-3"><dt className="text-fg-2">Vaani <span className="text-fg-3">({o.vaaniMinutes} min × ₹{vaaniRate ?? "?"})</span></dt>
-              <dd className="font-semibold tabular-nums">{o.vaaniCostInr === null ? "Unknown" : `₹${o.vaaniCostInr.toLocaleString("en-IN")}`}</dd></div>
-            <div className="flex justify-between gap-3"><dt className="text-fg-2">Gemini <span className="text-fg-3">({o.geminiTokens.toLocaleString("en-IN")} tokens)</span></dt>
-              <dd className="font-semibold tabular-nums">{o.geminiCostInr === null ? "Price not set" : `₹${o.geminiCostInr}`}</dd></div>
-            <div className="flex justify-between gap-3"><dt className="text-fg-2">Per completed call</dt>
-              <dd className="font-semibold tabular-nums">{costPerCall === null ? "—" : `≈ ₹${costPerCall}`}</dd></div>
-          </dl>
-          <div className="mt-4"><ButtonLink href="/system">How it works →</ButtonLink></div>
+        <Card title="This week" aside="Calls per day">
+          <StackedBars height={170} caption="Calls per day for the last 7 days, by outcome"
+            data={days.map((d) => ({ label: d.label, values: { qualified: d.qualified, review: d.review, notFit: d.notFit, missed: d.missed } }))}
+            series={[
+              { key: "qualified", label: "Qualified", color: "var(--c1)" },
+              { key: "review", label: "Needs a person", color: "var(--c2)" },
+              { key: "notFit", label: "Not a fit", color: "var(--c5)" },
+              { key: "missed", label: "Missed", color: "var(--c4)" },
+            ]} />
         </Card>
       </div>
+
+      {/* Row 5 — AI quality and running cost */}
+      <section className="rounded-3xl border border-line bg-surface p-6 shadow-card">
+        <div className="mb-4 flex flex-wrap items-baseline justify-between gap-3">
+          <h2 className="text-[15px] font-semibold">AI quality &amp; running cost</h2>
+          <Link href="/system" className="text-xs font-semibold text-accent hover:underline">How it works →</Link>
+        </div>
+        <dl className="grid grid-cols-2 gap-x-6 gap-y-5 sm:grid-cols-3 xl:grid-cols-6">
+          {strip.map(([k, v, note, cls]) => (
+            <div key={k} className="border-l border-line pl-4">
+              <dt className="text-xs text-fg-3">{k}</dt>
+              <dd className={`font-display mt-1 text-2xl font-semibold tabular-nums ${cls || "text-fg"}`}>{v}</dd>
+              <dd className="mt-0.5 text-xs text-fg-3">{note}</dd>
+            </div>
+          ))}
+        </dl>
+      </section>
     </div>
   );
 }
