@@ -44,7 +44,8 @@ export const ExtractionSchema = z.object({
   asks_for_senior: field(bool),
   prior_contact_frustrated: field(bool),
   booked: field(bool),
-  summary: z.string(),
+  // The 2-line summary sometimes arrives as ["line 1", "line 2"].
+  summary: z.preprocess((x) => (Array.isArray(x) ? x.map(String).join("\n") : x), z.string()),
 });
 
 export type Extraction = z.infer<typeof ExtractionSchema>;

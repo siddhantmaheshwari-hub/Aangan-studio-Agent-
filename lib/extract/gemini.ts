@@ -15,6 +15,8 @@ AGENT is the studio; USER is the caller. The call may mix English, Hindi and Mar
 Return ONLY a JSON object. For every field below return {"value": ..., "quote": ...}:
 - value: the fact, or null if the caller did not say it. Never guess.
 - quote: the caller's exact words (from a USER line) supporting the value, max 20 words, or null.
+- Write every value in English using Latin letters, even if the call was in Hindi/Marathi or in
+  Devanagari script (e.g. कोथरूड → "Kothrud", हिंजवडी → "Hinjewadi"). Quotes stay exactly as said.
 Also return "summary": two short lines for the studio team (no prices).
 
 Call date: ${callDate ?? "unknown"} (use it to compute completion_within_weeks).
