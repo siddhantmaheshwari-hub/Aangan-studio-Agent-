@@ -1,54 +1,74 @@
 @import "tailwindcss";
 
-/* Design tokens. Every colour on screen comes from here; components never use raw palette classes.
-   Text tokens meet WCAG AA (≥ 4.5:1) on both --surface and --bg in light and dark. */
+/* Design tokens — warm canvas, sage accents, white cards, charcoal type.
+   Every colour on screen comes from here. Text tokens are ≥ 4.5:1 on --surface and --bg.
+   Sage (#7C8B72) is used for fills and marks; text and buttons use the deeper --accent. */
 :root {
   color-scheme: light;
-  --bg: #f7f5f2;
+  --bg: #f6f5ef;
   --surface: #ffffff;
-  --surface-2: #f1eee9;
-  --line: #e3ded6;
-  --fg: #1c1a17;
-  --fg-2: #4a453e;
-  --fg-3: #6b645a;
-  --accent: #9a3412;
-  --accent-hover: #7c2d12;
+  --surface-2: #f2f1ea;
+  --line: #e5e3d9;
+  --fg: #23251f;
+  --fg-2: #4a4d44;
+  --fg-3: #686b60;
+  --sage: #7c8b72;
+  --sage-soft: #e8ece2;
+  --sage-deep: #3f4a38;
+  --accent: #56634d;
+  --accent-hover: #45503d;
   --accent-fg: #ffffff;
-  --ok: #14532d;
-  --ok-bg: #e4f3e9;
-  --warn: #713f12;
-  --warn-bg: #fbf0d5;
-  --danger: #8b1d1d;
-  --danger-bg: #fbe9e7;
-  --info: #1e3a8a;
-  --info-bg: #e6eefb;
-  --neutral: #3f3a33;
-  --neutral-bg: #ebe7e1;
+  --ok: #3d5733;
+  --ok-bg: #e6eddf;
+  --warn: #76490f;
+  --warn-bg: #f6ecd5;
+  --danger: #8a2b21;
+  --danger-bg: #f8e5e0;
+  --info: #2e4d68;
+  --info-bg: #e4ecf2;
+  --neutral: #4a4d44;
+  --neutral-bg: #ecebe3;
+  /* Chart palette: sage, sand, clay, slate, stone */
+  --c1: #7c8b72;
+  --c2: #d6bf97;
+  --c3: #c4876a;
+  --c4: #8fa2b0;
+  --c5: #bdbab0;
+  --shadow: 0 1px 2px rgb(35 37 31 / 0.04), 0 4px 16px rgb(35 37 31 / 0.04);
 }
 
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
     color-scheme: dark;
-    --bg: #151311;
-    --surface: #1e1b18;
-    --surface-2: #27231f;
-    --line: #3a352f;
-    --fg: #f2efea;
-    --fg-2: #d3ccc1;
-    --fg-3: #aaa296;
-    --accent: #fdba74;
-    --accent-hover: #fed7aa;
-    --accent-fg: #1c1a17;
-    --ok: #a7e3bd;
-    --ok-bg: #133022;
-    --warn: #f5d58a;
-    --warn-bg: #3a2c0d;
-    --danger: #f8b4ae;
-    --danger-bg: #401716;
-    --info: #b8d0f6;
-    --info-bg: #17243d;
-    --neutral: #d8d1c6;
-    --neutral-bg: #2d2925;
+    --bg: #161714;
+    --surface: #1f211c;
+    --surface-2: #282a24;
+    --line: #363930;
+    --fg: #f1f0ea;
+    --fg-2: #d2d0c6;
+    --fg-3: #a9a89d;
+    --sage: #9aab8e;
+    --sage-soft: #2c3328;
+    --sage-deep: #c9d6bd;
+    --accent: #b5c6a8;
+    --accent-hover: #cad8bf;
+    --accent-fg: #1a1c17;
+    --ok: #b3d3a4;
+    --ok-bg: #22301d;
+    --warn: #f0d39a;
+    --warn-bg: #3a2d10;
+    --danger: #f3b3a9;
+    --danger-bg: #3f1b17;
+    --info: #b5cde3;
+    --info-bg: #1b2a38;
+    --neutral: #d2d0c6;
+    --neutral-bg: #2c2e28;
+    --c1: #9aab8e;
+    --c2: #d9c49f;
+    --c3: #d39a7e;
+    --c4: #a4b6c3;
+    --c5: #7e7c74;
+    --shadow: none;
   }
 }
 
@@ -60,6 +80,9 @@
   --color-fg: var(--fg);
   --color-fg-2: var(--fg-2);
   --color-fg-3: var(--fg-3);
+  --color-sage: var(--sage);
+  --color-sage-soft: var(--sage-soft);
+  --color-sage-deep: var(--sage-deep);
   --color-accent: var(--accent);
   --color-accent-hover: var(--accent-hover);
   --color-accent-fg: var(--accent-fg);
@@ -73,18 +96,27 @@
   --color-info-bg: var(--info-bg);
   --color-neutral: var(--neutral);
   --color-neutral-bg: var(--neutral-bg);
+  --font-sans: var(--font-body), ui-sans-serif, system-ui, sans-serif;
+  --font-display: var(--font-heading), ui-serif, Georgia, serif;
+  --shadow-card: var(--shadow);
 }
 
 body {
   background: var(--bg);
   color: var(--fg);
+  font-feature-settings: "ss01", "cv11";
+}
+
+.font-display {
+  font-family: var(--font-display);
+  letter-spacing: -0.01em;
 }
 
 /* Visible keyboard focus everywhere (WCAG 2.4.7 / 2.4.11). */
 :focus-visible {
   outline: 2px solid var(--accent);
   outline-offset: 2px;
-  border-radius: 4px;
+  border-radius: 6px;
 }
 
 @media (prefers-reduced-motion: reduce) {

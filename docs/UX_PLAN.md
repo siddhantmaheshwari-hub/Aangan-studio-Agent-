@@ -111,10 +111,12 @@ Evidence over assertion (every fact has the caller's words) · One next step ove
 | Login | Get in | Open dashboard |
 
 ## L7 · Interface
-Tokens in `app/globals.css`: warm neutrals + one terracotta accent, semantic ok/warn/danger/info/neutral,
-light and dark. All 36 text/background pairs measured ≥ 4.5:1 (lowest 5.0:1). Type: Tailwind
-scale, 12 px minimum. Targets ≥ 36 px tall. Visible focus ring everywhere; skip link; status never
-conveyed by colour alone (labels + ✓/✕).
+Visual direction (10 Oct): warm canvas #F6F5EF, sage #7C8B72 for fills and marks, deeper sage
+#56634D for text/buttons, white cards, charcoal type; Fraunces (display) + DM Sans (body). Side
+navigation (Overview · Review queue · Calls · System), greeting header, sage hero card with a 7-day
+stacked chart, speed-to-lead gauge, KPI cards with week-over-week change, outcome donut. Charts are
+server-rendered SVG with text alternatives. All text/background pairs measured ≥ 4.5:1 in light and
+dark (white on the hero gradient ≥ 5.1:1). Mobile: top bar with scrolling nav, no sideways scroll.
 
 ## L9 · Quality & grading
 

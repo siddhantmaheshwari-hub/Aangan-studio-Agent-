@@ -90,17 +90,17 @@ export default async function CallDetailPage({ params, searchParams }: { params:
 
   return (
     <div className="space-y-5">
-      <Link href="/calls" className="inline-flex min-h-9 items-center text-sm text-fg-2 underline">← All calls</Link>
+      <Link href="/calls" className="inline-flex min-h-9 items-center gap-1 rounded-lg text-sm text-fg-2 hover:text-fg">← All calls</Link>
 
       {(sp.saved || sp.notice || sp.error) && (
-        <p role="status" className={`rounded-md p-3 text-sm ${sp.error ? "bg-danger-bg text-danger" : "bg-ok-bg text-ok"}`}>
+        <p role="status" className={`rounded-xl px-4 py-3 text-sm ${sp.error ? "bg-danger-bg text-danger" : "bg-ok-bg text-ok"}`}>
           {sp.error ?? sp.notice ?? "Decision saved and recorded in the audit log."}
         </p>
       )}
 
       <header className="flex flex-wrap items-start justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-semibold">{name}</h1>
+          <h1 className="font-display text-[28px] font-semibold leading-tight sm:text-[32px]">{name}</h1>
           <p className="text-sm text-fg-2">
             {IST(iso(call.started_at) ?? iso(call.created_at))} IST · {dur(call.duration_sec as number | null)} · {String(call.call_outcome)}
             {call.caller_number && name !== call.caller_number ? ` · ${call.caller_number}` : ""}
@@ -115,7 +115,7 @@ export default async function CallDetailPage({ params, searchParams }: { params:
       </header>
 
       {siblings.length > 0 && (
-        <p className="rounded-md bg-surface-2 px-3 py-2 text-sm">
+        <p className="rounded-xl bg-surface-2 px-4 py-2.5 text-sm">
           Same caller, same enquiry:{" "}
           {siblings.map((s) => (
             <Link key={String(s.id)} href={`/calls/${s.id}`} className="mr-3 text-accent underline">
@@ -213,7 +213,7 @@ export default async function CallDetailPage({ params, searchParams }: { params:
                 const used = usedFor.get(i);
                 return (
                   <li key={i} className={sp === "AGENT" ? "pr-8" : "pl-8"}>
-                    <div className={`rounded-lg px-3 py-2 ${price ? "border-2 border-danger bg-danger-bg" : sp === "AGENT" ? "bg-surface-2" : "border border-line"}`}>
+                    <div className={`rounded-2xl px-3.5 py-2.5 ${price ? "border-2 border-danger bg-danger-bg" : sp === "AGENT" ? "bg-surface-2" : "border border-line bg-sage-soft/40"}`}>
                       <span className="block text-xs font-semibold text-fg-3">{sp === "AGENT" ? "Agent" : "Caller"}</span>
                       {text}
                       {price && <span className="mt-1 block text-xs font-semibold text-danger">⚠ Price figure spoken by the agent</span>}
